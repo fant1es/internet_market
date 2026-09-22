@@ -3,12 +3,13 @@ from typing import Annotated
 from fastapi import Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.database import get_db
 from app.utils.jwt import decode_access_token
 from app.utils.database import get_user
 from app.models import User
 
 
-async def get_current_user(request: Request, db: AsyncSession) -> User:
+async def get_current_user(request: Request, db: Annotated[AsyncSession, Depends(get_db)]) -> User:
     token = request.cookies.get("access_token")
     if not token:
         raise HTTPException(status_code=401, detail="Не авторизован")
@@ -23,4 +24,11 @@ async def get_current_user(request: Request, db: AsyncSession) -> User:
     return user
 
 
+async def get_current_admin(user: User = Depends(get_current_user)):
+    if user.role != "admin":
+        raise HTTPException(403, "Forbidden")
+    return user
+
+
 CurrentUser = Annotated[User, Depends(get_current_user)]
+CurrentAdmin = Annotated[User, Depends(get_current_admin)]
