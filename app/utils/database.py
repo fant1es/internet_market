@@ -10,3 +10,7 @@ async def create_user(name: str, email: str, password: str, db: AsyncSession):
     db.add(user)
     await db.flush()
     return user
+
+async def get_user(user_id: int, db: AsyncSession):
+    user = await db.get(User, user_id)
+    return user
