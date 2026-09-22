@@ -15,6 +15,7 @@ async def get_current_user(request: Request, db: Annotated[AsyncSession, Depends
         raise HTTPException(status_code=401, detail="Не авторизован")
 
     payload = decode_access_token(token)
+    # noinspection PyTypeChecker
     user_id = int(payload.get("sub"))
 
     user = await get_user(user_id, db)
