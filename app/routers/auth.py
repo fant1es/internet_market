@@ -7,15 +7,16 @@ from typing import Annotated
 from starlette.responses import Response
 
 from app.database import get_db
+from app.dependencies.auth import CurrentUser
 from app.models import User, Cart
 from app.schemas.auth import RegisterSchema, UserOut, LoginSchema
 from app.utils.database import create_user
 from app.utils.jwt import create_access_token
 from app.utils.security import verify_password
 
-router = APIRouter(prefix="/auth", tags=["auth"])
+auth_router = APIRouter(prefix="/auth", tags=["auth"])
 
-@router.post("/register", response_model=UserOut)
+@auth_router.post("/register", response_model=UserOut)
 async def register(data: RegisterSchema,
                    db: Annotated[AsyncSession, Depends(get_db)]):
     # Уникальность почты
@@ -37,7 +38,7 @@ async def register(data: RegisterSchema,
             }
 
 
-@router.post("/login", response_model=UserOut)
+@auth_router.post("/login", response_model=UserOut)
 async def login(data: LoginSchema,
                 db: Annotated[AsyncSession, Depends(get_db)], response: Response):
     # noinspection PyTypeChecker
@@ -48,3 +49,14 @@ async def login(data: LoginSchema,
     response.set_cookie(key="access_token", value=create_access_token(user.id), httponly=True)
 
     return user
+
+
+@auth_router.get("/me", response_model=UserOut)
+async def get_me(user: CurrentUser):
+    return user
+
+
+@auth_router.post("/logout")
+async def logout(response: Response):
+    response.delete_cookie(key="access_token")
+    return {"detail": "Вы вышли из аккаунта"}
