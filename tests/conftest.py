@@ -1,5 +1,6 @@
 import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
+from sqlalchemy import NullPool
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 
 from app.main import app
@@ -9,24 +10,26 @@ from app.config import settings
 # Отдельная тестовая база данных
 TEST_DATABASE_URL = settings.database_url.rsplit("/", 1)[0] + "/test_db"
 
-test_engine = create_async_engine(TEST_DATABASE_URL)
-TestSessionLocal = async_sessionmaker(bind=test_engine, expire_on_commit=False)
-
-
 @pytest_asyncio.fixture(scope="function")
 async def db_session():
     """
     Создаёт все таблицы перед тестом, отдаёт сессию для работы с БД,
-    после теста удаляет все таблицы — следующий тест стартует с чистого листа.
-    """
+    после теста удаляет все таблицы — следующий тест стартует с чистого листа. """
+    # NullPool отключает пул соединений SQLAlchemy
+    test_engine = create_async_engine(TEST_DATABASE_URL, poolclass=NullPool)
+    test_session_local = async_sessionmaker(bind=test_engine, expire_on_commit=False)
+
     async with test_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
-    async with TestSessionLocal() as session:
+    async with test_session_local() as session:
         yield session
 
     async with test_engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
+
+    # Явное закрытие всех соединений движка
+    await test_engine.dispose()
 
 
 @pytest_asyncio.fixture(scope="function")
