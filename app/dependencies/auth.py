@@ -30,6 +30,23 @@ async def get_current_admin(user: User = Depends(get_current_user)):
         raise HTTPException(403, "Forbidden")
     return user
 
+# Нужен там, где пользователь заходит как гость (для показания страниц регистрации/входа)
+async def get_current_user_optional(request: Request,
+                                    db: Annotated[AsyncSession, Depends(get_db)]) -> User | None:
+    token = request.cookies.get("access_token")
+    if not token:
+        return None
+
+    try:
+        payload = decode_access_token(token)
+        # noinspection PyTypeChecker
+        user_id = int(payload.get("sub"))
+    except Exception:
+        return None
+
+    return await get_user(user_id, db)
+
 
 CurrentUser = Annotated[User, Depends(get_current_user)]
 CurrentAdmin = Annotated[User, Depends(get_current_admin)]
+CurrentUserOptional = Annotated[User | None, Depends(get_current_user_optional)]
