@@ -17,3 +17,10 @@ async def login_page(request: Request, user: CurrentUserOptional):
     if user:
         return RedirectResponse("/")
     return templates.TemplateResponse(request, "auth/login.html", {"user": user})
+
+
+@router.get("/register")
+async def register_page(request: Request, user: CurrentUserOptional):
+    if user:
+        return RedirectResponse("/")
+    return templates.TemplateResponse(request, "auth/register.html", {"user": user})

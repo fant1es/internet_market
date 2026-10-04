@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Регистрация{% endblock %}
+
+{% block content %}
+  <div class="col-md-5 col-lg-4 mx-auto">
+    <h1 class="mb-4">Регистрация</h1>
+
+    <form id="register-form" novalidate>
+      <div class="mb-3">
+        <label for="name" class="form-label">Имя</label>
+        <input type="text" class="form-control" id="name" name="name" required>
+        <div class="form-text">Только буквы, пробел и дефис</div>
+      </div>
+
+      <div class="mb-3">
+        <label for="email" class="form-label">Email</label>
+        <input type="email" class="form-control" id="email" name="email" required>
+      </div>
+
+      <div class="mb-3">
+        <label for="password" class="form-label">Пароль</label>
+        <input type="password" class="form-control" id="password" name="password" required>
+        <div class="form-text">6-20 символов: буквы, цифры, _ + -</div>
+      </div>
+
+      <button type="submit" class="btn btn-primary w-100">Зарегистрироваться</button>
+    </form>
+
+    <p class="mt-3 text-center">
+      Уже есть аккаунт? <a href="/login">Войти</a>
+    </p>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  <script src="/static/js/auth.js"></script>
+{% endblock %}
