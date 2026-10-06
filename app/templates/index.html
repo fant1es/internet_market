@@ -1,8 +1,26 @@
 {% extends "base.html" %}
 
-{% block title %}Главная{% endblock %}
+{% block title %}Каталог{% endblock %}
 
 {% block content %}
-  <h1>Главная</h1>
-  <p>Тестирование</p>
+  <h1 class="mb-4">Каталог</h1>
+
+  <div class="row g-2 mb-4">
+    <div class="col-md-8">
+      <input type="search" id="search-input" class="form-control" placeholder="Поиск по названию...">
+    </div>
+    <div class="col-md-4">
+      <select id="category-select" class="form-select">
+        <option value="">Все категории</option>
+      </select>
+    </div>
+  </div>
+
+  <div id="products-grid" class="row row-cols-1 row-cols-sm-2 row-cols-lg-4 g-3"></div>
+
+  <nav id="pagination" class="mt-4"></nav>
+{% endblock %}
+
+{% block scripts %}
+  <script src="/static/js/catalog.js"></script>
 {% endblock %}
