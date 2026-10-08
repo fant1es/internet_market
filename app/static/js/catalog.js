@@ -32,7 +32,7 @@ function renderProducts(items) {
             <div class="bg-light text-center text-muted py-5">Нет фото</div>
             <div class="card-body d-flex flex-column">
               <h6 class="card-title">
-                <a href="products/product/${p.id}" class="text-decoration-none">${escapeHtml(p.name)}</a>
+                <a href="/product/${p.id}" class="text-decoration-none">${escapeHtml(p.name)}</a>
               </h6>
               <div class="fw-bold mb-3">${formatPrice(p.price)}</div>
               <button class="btn btn-primary btn-sm mt-auto add-to-cart"
