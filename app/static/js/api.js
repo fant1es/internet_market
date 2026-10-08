@@ -49,3 +49,9 @@ function errorText(err) {
   }
   return detail || err.message;
 }
+
+// Перенесли сюда, т.к. используется уже в 2 файлах
+function formatPrice(price) {
+    // price приходит строкой ("29990.00"), для форматирования приводим к числу
+    return Number(price).toLocaleString("ru-RU") + " BYN";
+}

@@ -17,11 +17,6 @@ function debounce(fn, delay = 300) {
     };
 }
 
-function formatPrice(price) {
-    // price приходит строкой ("29990.00"), для форматирования приводим к числу
-    return Number(price).toLocaleString("ru-RU") + " BYN";
-}
-
 function renderProducts(items) {
     if (items.length === 0) {
         productsGrid.innerHTML = `<div class="col-12 text-center text-muted py-5">Ничего не найдено</div>`;
@@ -37,7 +32,7 @@ function renderProducts(items) {
             <div class="bg-light text-center text-muted py-5">Нет фото</div>
             <div class="card-body d-flex flex-column">
               <h6 class="card-title">
-                <a href="/product/${p.id}" class="text-decoration-none">${escapeHtml(p.name)}</a>
+                <a href="products/product/${p.id}" class="text-decoration-none">${escapeHtml(p.name)}</a>
               </h6>
               <div class="fw-bold mb-3">${formatPrice(p.price)}</div>
               <button class="btn btn-primary btn-sm mt-auto add-to-cart"
