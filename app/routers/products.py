@@ -1,11 +1,13 @@
 import math
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
+from app.dependencies.auth import CurrentUserOptional
 from app.models import Category, Product
+from app.routers.pages import templates
 from app.schemas.product import ProductListOut, ProductOut
 
 router = APIRouter(prefix="/products", tags=["products"])
@@ -62,3 +64,10 @@ async def get_product(product_id: int, db: AsyncSession = Depends(get_db)):
     if product is None:
         raise HTTPException(status_code=404, detail="Товар не найден")
     return product
+
+
+@router.get("/product/{product_id}")
+async def product_page(request: Request, product_id: int, user: CurrentUserOptional):
+    return templates.TemplateResponse(
+        request, "product.html", {"user": user, "product_id": product_id}
+    )

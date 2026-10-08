@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}Товар{% endblock %}
+
+{% block content %}
+  <a href="/" class="btn btn-link px-0 mb-3">← Назад в каталог</a>
+
+  {# Обновление тегов в js будет #}
+  <div id="product" data-id="{{ product_id }}">
+    <div class="text-muted">Загрузка...</div>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  <script src="/static/js/product.js"></script>
+{% endblock %}
