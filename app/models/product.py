@@ -9,12 +9,14 @@ class Product(Base):
 
     id: int = Column(Integer, primary_key=True)
     category_id: int = Column(Integer, ForeignKey('categories.id'), nullable=False)
+    brand_id: int = Column(Integer, ForeignKey('brands.id'), nullable=True, index=True)
 
     sku: str = Column(String, unique=True, nullable=False) # Артикул
     name: str = Column(String, nullable=False)
     description: str = Column(Text, nullable=True)
 
-    price: float = Column(DECIMAL(precision=10, scale=2), nullable=False)
+    price: float = Column(DECIMAL(precision=10, scale=2), nullable=False) # Нынешняя цена(может быть со скидкой)
+    old_price: float = Column(DECIMAL(precision=10, scale=2), nullable=True)  # Цена до скидки
     stock_quantity: int = Column(Integer, default=0, nullable=False)
 
     image_path: str = Column(String, nullable=True)
