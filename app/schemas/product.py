@@ -9,10 +9,12 @@ class ProductOut(BaseModel):
 
     id: int
     category_id: int
+    brand_id: int | None
     sku: str
     name: str
     description: str | None
     price: Decimal
+    old_price: Decimal | None  # Цена до скидки, None если скидки нет
     stock_quantity: int
     image_path: str | None
 
