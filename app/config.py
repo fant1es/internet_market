@@ -10,6 +10,11 @@ class Settings(BaseSettings):
     algorithm: str
     access_token_expire_minutes: int
 
+    # Данные для создания администратора через сид
+    admin_name: str = "Администратор"
+    admin_email: str | None = None
+    admin_password: str | None = None
+
     # Без extra=ignore строго требует все поля из файла окружения
     model_config = SettingsConfigDict(env_file='.env')
 

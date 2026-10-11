@@ -6,8 +6,11 @@ from decimal import Decimal
 from sqlalchemy import select, text
 
 import app.models  # noqa: F401 # импорт нужен, чтобы все модели попали в Base.metadata
+from app.config import settings
 from app.database import Base, engine, async_session
-from app.models import Brand, Category, Product
+from app.models import Brand, Cart, Category, Product, User
+from app.models.user import UserRole
+from app.utils.security import hash_password
 
 # --- Тестовые данные -------------------------------------------------------
 # (название бренда, slug)
@@ -85,6 +88,16 @@ CATALOG = [
 ]
 
 
+# Демо-пользователи для разработки и итогового показа (имя, email, пароль).
+# Пароли должны проходить валидацию входа: 6-20 символов, буквы, цифры, _ + -
+# Администратор сюда не входит: его данные берутся из .env (ADMIN_EMAIL, ADMIN_PASSWORD)
+DEMO_USERS = [
+    ("Иван Петров", "ivan@example.com", "Demo_pass1"),
+    ("Анна Смирнова", "anna@example.com", "Demo_pass2"),
+    ("Олег Иванов", "oleg@example.com", "Demo_pass3"),
+]
+
+
 def _make_product_data(index: int, name: str, price: str, brand_id: int | None, old_price: str | None) -> dict:
     """Вспомогательная команда, собирает поля товара. Часть товаров намеренно делаем с особыми условиями."""
     stock = random.randint(1, 50)
@@ -109,8 +122,47 @@ def _make_product_data(index: int, name: str, price: str, brand_id: int | None, 
 
 
 # --- Команды ---------------------------------------------------------------
+async def _ensure_user(session, name: str, email: str, password: str, role: UserRole) -> str:
+    """Создаёт пользователя вместе с пустой корзиной (как это делает регистрация).
+    Возвращает 'created', 'promoted' или 'exists'.
+    """
+    user = await session.scalar(select(User).where(User.email == email))
+
+    if user is not None:
+        # Аккаунт с таким email уже есть: для админа просто повышаем роль, пароль не трогаем
+        if role == UserRole.ADMIN and user.role != UserRole.ADMIN:
+            user.role = UserRole.ADMIN
+            return "promoted"
+        return "exists"
+
+    user = User(name=name, email=email, password_hash=hash_password(password), role=role)
+    session.add(user)
+    await session.flush()  # Получаем user.id
+    session.add(Cart(user_id=user.id))
+    return "created"
+
+
+async def _seed_users(session) -> dict[str, int]:
+    """Создаёт администратора из .env и демо-пользователей."""
+    stats = {"created": 0, "promoted": 0, "exists": 0}
+
+    if settings.admin_email and settings.admin_password:
+        result = await _ensure_user(
+            session, settings.admin_name, settings.admin_email.strip(),
+            settings.admin_password, UserRole.ADMIN,
+        )
+        stats[result] += 1
+    else:
+        print("ADMIN_EMAIL / ADMIN_PASSWORD не заданы в .env — администратор не создан")
+
+    for name, email, password in DEMO_USERS:
+        stats[await _ensure_user(session, name, email, password, UserRole.USER)] += 1
+
+    return stats
+
+
 async def seed() -> None:
-    """Генерирует бренды, категории и товары для базы данных"""
+    """Генерирует бренды, категории, товары и пользователей для базы данных"""
     # Определенный сид для отладки
     random.seed(42)
 
@@ -159,10 +211,15 @@ async def seed() -> None:
                 session.add(Product(sku=sku, category_id=category.id, **data))
                 created_products += 1
 
+        # В конце отдельной функцией пользователи
+        user_stats = await _seed_users(session)
+
         await session.commit()
 
     print(f"Готово: брендов создано — {created_brands}, категорий создано — {created_categories}, "
-        f"товаров создано — {created_products}, пропущено (уже есть) — {skipped_products}")
+          f"товаров создано — {created_products}, пропущено (уже есть) — {skipped_products}")
+    print(f"Пользователи: создано — {user_stats['created']}, повышено до админа — {user_stats['promoted']}, "
+          f"уже были — {user_stats['exists']}")
 
 
 async def clear(keep_users: bool = False) -> None:
