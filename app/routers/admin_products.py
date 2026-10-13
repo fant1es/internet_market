@@ -1,14 +1,16 @@
 import math
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from sqlalchemy import func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.concurrency import run_in_threadpool
 
 from app.database import get_db
 from app.dependencies.auth import get_current_admin
 from app.models import Brand, Category, Product
 from app.schemas.admin_product import ActiveUpdate, ProductAdminListOut, ProductAdminOut, ProductIn
+from app.services.image_service import MAX_IMAGE_BYTES, InvalidImageError, delete_product_image, save_product_image
 
 
 router = APIRouter(
@@ -121,4 +123,43 @@ async def set_product_active(product_id: int, data: ActiveUpdate, db: AsyncSessi
     product = await _get_or_404(db, product_id)
     product.is_active = data.is_active
     await _commit(db)
+    return product
+
+
+@router.post("/{product_id}/image", response_model=ProductAdminOut, summary="Загрузить изображение товара")
+async def upload_product_image(product_id: int, file: UploadFile = File(...), db: AsyncSession = Depends(get_db)):
+    product = await _get_or_404(db, product_id)
+
+    # Читаем на 1 байт больше лимита: так видно превышение, не загружая в память файл любого размера
+    data = await file.read(MAX_IMAGE_BYTES + 1)
+    if len(data) > MAX_IMAGE_BYTES:
+        raise HTTPException(status_code=413, detail=f"Файл слишком большой (максимум {MAX_IMAGE_BYTES // 1024 // 1024} МБ)")
+
+    try:
+        # Pillow блокирует поток, поэтому уводим обработку в пул потоков, чтобы не тормозить остальные запросы
+        new_path = await run_in_threadpool(save_product_image, data)
+    except InvalidImageError as e:
+        raise HTTPException(status_code=415, detail=str(e))
+
+    old_path = product.image_path
+    product.image_path = new_path
+    try:
+        await _commit(db)
+    except Exception:
+        delete_product_image(new_path)  # БД не приняла изменение: не оставляем файл-сироту
+        raise
+
+    delete_product_image(old_path)  # старую картинку удаляем только после успешного коммита
+    return product
+
+
+@router.delete("/{product_id}/image", response_model=ProductAdminOut, summary="Удалить изображение товара")
+async def delete_image(product_id: int, db: AsyncSession = Depends(get_db)):
+    product = await _get_or_404(db, product_id)
+
+    old_path = product.image_path
+    product.image_path = None
+    await _commit(db)
+
+    delete_product_image(old_path)
     return product
