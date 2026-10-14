@@ -23,7 +23,9 @@ function renderRow(p) {
     <tr class="${p.is_active ? "" : "table-secondary"}">
       <td>${thumb}</td>
       <td>${escapeHtml(p.sku)}</td>
-      <td>${escapeHtml(p.name)}</td>
+      <td>
+        <a href="/admin/product/${p.id}">${escapeHtml(p.name)}</a>
+      </td>
       <td>${escapeHtml(categoryNames[p.category_id] ?? "—")}</td>
       <td>${p.brand_id ? escapeHtml(brandNames[p.brand_id] ?? "—") : "—"}</td>
       <td class="text-end">${formatPrice(p.price)}</td>
@@ -34,7 +36,7 @@ function renderRow(p) {
         </span>
       </td>
       <td class="text-end text-nowrap">
-        <a href="/admin/product/${p.id}" class="btn btn-outline-primary btn-sm">Изменить</a>
+        <a href="/admin/product/${p.id}/edit" class="btn btn-outline-primary btn-sm">Изменить</a>
         <button class="btn btn-outline-secondary btn-sm toggle-active"
                 data-id="${p.id}" data-active="${p.is_active}">
           ${p.is_active ? "Скрыть" : "Показать"}
