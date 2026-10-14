@@ -50,8 +50,37 @@ function errorText(err) {
   return detail || err.message;
 }
 
-// Перенесли сюда, т.к. используется уже в 2 файлах
 function formatPrice(price) {
     // price приходит строкой ("29990.00"), для форматирования приводим к числу
     return Number(price).toLocaleString("ru-RU") + " BYN";
+}
+
+// Откладывает вызов fn, пока пользователь не перестанет вводить на delay мс
+function debounce(fn, delay = 300) {
+    let timer;
+    return (...args) => {
+        clearTimeout(timer);
+        timer = setTimeout(() => fn(...args), delay);
+    };
+}
+
+// Рисует кнопки страниц в контейнере. Клики обрабатывает вызывающий код (кнопки, помеченные data-page)
+function renderPagination(container, page, pages) {
+    if (pages <= 1) {
+        container.innerHTML = "";
+        return;
+    }
+
+    let html = `<ul class="pagination justify-content-center">`;
+    for (let i = 1; i <= pages; i++) {
+        html += `<li class="page-item ${i === page ? "active" : ""}">
+                   <button class="page-link" data-page="${i}">${i}</button>
+                 </li>`;
+    }
+    container.innerHTML = html + `</ul>`;
+}
+
+// Адрес картинки товара. В БД лежит путь относительно /static
+function productImageUrl(product) {
+    return product.image_path ? `/static/${product.image_path}` : null;
 }

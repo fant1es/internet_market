@@ -8,15 +8,6 @@ const pagination = document.getElementById("pagination");
 const searchInput = document.getElementById("search-input");
 const categorySelect = document.getElementById("category-select");
 
-// Откладывает вызов fn, пока пользователь не перестанет вводить на delay мс
-function debounce(fn, delay = 300) {
-    let timer;
-    return (...args) => {
-        clearTimeout(timer);
-        timer = setTimeout(() => fn(...args), delay);
-    };
-}
-
 function renderProducts(items) {
     if (items.length === 0) {
         productsGrid.innerHTML = `<div class="col-12 text-center text-muted py-5">Ничего не найдено</div>`;
@@ -45,21 +36,6 @@ function renderProducts(items) {
     }).join("");
 }
 
-function renderPagination(page, pages) {
-    if (pages <= 1) {
-        pagination.innerHTML = "";
-        return;
-    }
-
-    let html = `<ul class="pagination justify-content-center">`;
-    for (let i = 1; i <= pages; i++) {
-        html += `<li class="page-item ${i === page ? "active" : ""}">
-                   <button class="page-link" data-page="${i}">${i}</button>
-                 </li>`;
-    }
-    pagination.innerHTML = html + `</ul>`;
-}
-
 // Номер последнего запроса: защита от гонки, когда старый ответ приходит позже нового
 let lastRequestId = 0;
 
@@ -75,7 +51,7 @@ async function loadProducts() {
         if (requestId !== lastRequestId) return; // пришёл устаревший ответ, игнорируем
 
         renderProducts(data.items);
-        renderPagination(data.page, data.pages);
+        renderPagination(pagination, data.page, data.pages);
     }
     catch (err) {
         showAlert(errorText(err));
