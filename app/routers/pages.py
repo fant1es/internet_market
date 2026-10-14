@@ -50,3 +50,11 @@ async def admin_products_page(request: Request, user: CurrentUserOptional):
     if redirect is not None:
         return redirect
     return templates.TemplateResponse(request, "admin/products.html", {"user": user})
+
+
+@router.get("/admin/product/{product_id}")
+async def admin_product_page(request: Request, product_id: int, user: CurrentUserOptional):
+    redirect = _admin_redirect(user)
+    if redirect is not None:
+        return redirect
+    return templates.TemplateResponse(request, "admin/product.html", {"user": user, "product_id": product_id})

@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}Админка: товар{% endblock %}
+
+{% block content %}
+  <a href="/admin" class="btn btn-link px-0 mb-3">← К списку товаров</a>
+
+  {# Содержимое рисует admin_product.js после загрузки данных товара #}
+  <div id="product-card" data-id="{{ product_id }}">
+    <div class="text-muted">Загрузка...</div>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  <script src="/static/js/admin/admin_product.js"></script>
+{% endblock %}
