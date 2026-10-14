@@ -3,6 +3,7 @@ from fastapi.templating import Jinja2Templates
 from fastapi.responses import RedirectResponse
 
 from app.dependencies.auth import CurrentUserOptional
+from app.models.user import UserRole
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
@@ -31,3 +32,21 @@ async def product_page(request: Request, product_id: int, user: CurrentUserOptio
     return templates.TemplateResponse(
         request, "product.html", {"user": user, "product_id": product_id}
     )
+
+
+def _admin_redirect(user) -> RedirectResponse | None:
+    """Если просто поставить в admin_product_page, обычные юзеры получали бы 403,
+    поэтому их просто редиректим на нужную страницу."""
+    if user is None:
+        return RedirectResponse("/login")
+    if user.role != UserRole.ADMIN:
+        return RedirectResponse("/")
+    return None
+
+
+@router.get("/admin")
+async def admin_products_page(request: Request, user: CurrentUserOptional):
+    redirect = _admin_redirect(user)
+    if redirect is not None:
+        return redirect
+    return templates.TemplateResponse(request, "admin/products.html", {"user": user})

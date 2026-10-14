@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}Админка: товары{% endblock %}
+
+{% block content %}
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="mb-0">Товары</h1>
+    <a href="/admin/product/new" class="btn btn-primary">+ Добавить товар</a>
+  </div>
+
+  <div class="row g-2 mb-3">
+    <div class="col-md-6">
+      <input type="search" id="search-input" class="form-control" placeholder="Поиск по названию или артикулу...">
+    </div>
+    <div class="col-md-3">
+      <select id="status-select" class="form-select">
+        <option value="">Все товары</option>
+        <option value="true">Только видимые</option>
+        <option value="false">Только скрытые</option>
+      </select>
+    </div>
+    <div class="col-md-3">
+      <select id="category-select" class="form-select">
+        <option value="">Все категории</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-hover align-middle">
+      <thead>
+        <tr>
+          <th style="width: 64px"></th>
+          <th>Артикул</th>
+          <th>Название</th>
+          <th>Категория</th>
+          <th>Бренд</th>
+          <th class="text-end">Цена</th>
+          <th class="text-end">Остаток</th>
+          <th>Статус</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="products-body"></tbody>
+    </table>
+  </div>
+
+  <nav id="pagination" class="mt-3"></nav>
+{% endblock %}
+
+{% block scripts %}
+  <script src="/static/js/admin.js"></script>
+{% endblock %}
