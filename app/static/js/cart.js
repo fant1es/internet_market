@@ -29,6 +29,17 @@ function refreshCartUI(cart) {
     if (cartRoot) renderCart(cart);
 }
 
+// Старая цена показывается, только если она действительно выше текущей
+function oldPriceOf(p) {
+    const old = Number(p.old_price);
+    return old > Number(p.price) ? old : null;
+}
+
+// Деньги считаем с округлением до копеек, чтобы не тянуть хвосты вида 0.30000000000000004
+function roundMoney(x) {
+    return Math.round(x * 100) / 100;
+}
+
 function renderCart(cart) {
     if (cart.items.length === 0) {
         cartRoot.innerHTML = `
@@ -39,40 +50,84 @@ function renderCart(cart) {
         return;
     }
 
+    // Итоги: со скидкой (с сервера), без скидки и разница
+    const total = Number(cart.total);
+    const totalOld = roundMoney(cart.items.reduce(
+        (sum, { product: p, quantity }) => sum + (oldPriceOf(p) ?? Number(p.price)) * quantity, 0
+    ));
+    const discount = roundMoney(totalOld - total);
+
     const rows = cart.items.map(({ id, product: p, quantity, subtotal }) => {
         const imageUrl = productImageUrl(p);
+        const oldPrice = oldPriceOf(p);
         return `
-        <tr>
-          <td style="width: 80px">
+        <div class="d-flex gap-3 p-3 border-bottom cart-item">
+          <a href="/product/${p.id}" class="flex-shrink-0 bg-light rounded d-flex align-items-center justify-content-center"
+             style="width: 140px; height: 140px;">
             ${imageUrl
-                ? `<img src="${escapeHtml(imageUrl)}" alt="" class="img-fluid">`
+                ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(p.name)}"
+                        class="w-100 h-100 object-fit-contain rounded">`
                 : `<span class="text-muted small">Нет фото</span>`}
-          </td>
-          <td><a href="/product/${p.id}" class="text-decoration-none">${escapeHtml(p.name)}</a></td>
-          <td class="text-nowrap">${formatPrice(p.price)}</td>
-          <td style="width: 110px">
-            <input type="number" class="form-control form-control-sm qty-input"
-                   data-id="${id}" value="${quantity}" min="1" max="${p.stock_quantity}">
-          </td>
-          <td class="text-nowrap fw-bold">${formatPrice(subtotal)}</td>
-          <td class="text-end">
-            <button class="btn btn-outline-danger btn-sm remove-item" data-id="${id}">Удалить</button>
-          </td>
-        </tr>`;
+          </a>
+
+          <div class="flex-grow-1 d-flex flex-column flex-md-row gap-3">
+            <div class="flex-grow-1">
+              <a href="/product/${p.id}" class="fs-5 fw-semibold text-decoration-none">${escapeHtml(p.name)}</a>
+              <div class="mt-2">
+                <span class="fs-5 fw-bold">${formatPrice(p.price)}</span>
+                ${oldPrice ? `<s class="text-muted ms-2">${formatPrice(oldPrice)}</s>` : ""}
+                <span class="text-muted small">за шт.</span>
+              </div>
+              <div class="text-muted small mt-1">В наличии: ${p.stock_quantity} шт.</div>
+            </div>
+
+            <div class="d-flex flex-md-column align-items-md-end justify-content-between gap-2">
+              <input type="number" class="form-control qty-input" style="width: 100px"
+                     data-id="${id}" value="${quantity}" min="1" max="${p.stock_quantity}">
+              <div class="text-md-end">
+                <div class="fs-5 fw-bold text-nowrap">${formatPrice(subtotal)}</div>
+                ${oldPrice
+                    ? `<s class="text-muted small text-nowrap">${formatPrice(roundMoney(oldPrice * quantity))}</s>`
+                    : ""}
+              </div>
+              <button class="btn btn-outline-danger btn-sm remove-item" data-id="${id}">Удалить</button>
+            </div>
+          </div>
+        </div>`;
     }).join("");
 
     cartRoot.innerHTML = `
-      <div class="table-responsive">
-        <table class="table align-middle">
-          <thead>
-            <tr><th></th><th>Товар</th><th>Цена</th><th>Кол-во</th><th>Сумма</th><th></th></tr>
-          </thead>
-          <tbody>${rows}</tbody>
-        </table>
-      </div>
-      <div class="d-flex justify-content-between align-items-center mt-3">
-        <div class="fs-4">Итого: <strong>${formatPrice(cart.total)}</strong></div>
-        <button class="btn btn-success" disabled title="Будет на следующем шаге">Оформить заказ</button>
+      <div class="row g-4 align-items-start">
+        <div class="col-lg-8">
+          <div class="card">
+            <div class="card-header fw-semibold">Товары в корзине (${cart.total_quantity} шт.)</div>
+            <div>${rows}</div>
+          </div>
+        </div>
+
+        <div class="col-lg-4">
+          <div class="card position-sticky" style="top: 1rem;">
+            <div class="card-header fw-semibold">Итого</div>
+            <div class="card-body">
+              <div class="d-flex justify-content-between mb-2">
+                <span class="text-muted">Сумма без скидки</span>
+                <span class="text-nowrap">${formatPrice(totalOld)}</span>
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <span class="text-muted">Скидка</span>
+                <span class="text-nowrap ${discount > 0 ? "text-danger" : ""}">
+                  ${discount > 0 ? "−" : ""}${formatPrice(discount)}
+                </span>
+              </div>
+              <hr>
+              <div class="d-flex justify-content-between align-items-baseline mb-3">
+                <span class="fs-5">К оплате</span>
+                <strong class="fs-4 text-nowrap">${formatPrice(total)}</strong>
+              </div>
+              <button class="btn btn-success w-100" disabled title="Будет на следующем шаге">Оформить заказ</button>
+            </div>
+          </div>
+        </div>
       </div>`;
 }
 
