@@ -82,3 +82,10 @@ async def admin_references_page(request: Request, user: CurrentUserOptional):
     if redirect is not None:
         return redirect
     return templates.TemplateResponse(request, "admin/references.html")
+
+
+@router.get("/my-cart")
+async def cart_page(request: Request, user: CurrentUserOptional):
+    if not user:
+        return RedirectResponse("/login")
+    return templates.TemplateResponse(request, "cart.html", {"user": user})

@@ -12,7 +12,9 @@
   <a class="navbar-brand" href="/">Магазин</a>
   <div class="ms-auto d-flex align-items-center gap-2">
     {% if user %}
-      <span id="cart-count" class="badge bg-secondary">0</span>
+      <a href="/my-cart" class="btn btn-outline-primary btn-sm">
+        Корзина <span id="cart-count" class="badge bg-secondary">0</span>
+      </a>
       <span>Привет, {{ user.name }}</span>
       <button id="logout-btn" class="btn btn-outline-secondary btn-sm">Выйти</button>
     {% else %}
@@ -27,6 +29,7 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="/static/js/api.js"></script>
 <script src="/static/js/base.js"></script>
+<script src="/static/js/cart.js"></script>
 {% block scripts %}{% endblock %}
 </body>
 </html>

@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, ForeignKey, UniqueConstraint
+from sqlalchemy.orm import relationship
 
 from app.database import Base
 
@@ -9,6 +10,9 @@ class CartItem(Base):
     cart_id: int = Column(Integer, ForeignKey('carts.id'), nullable=False)
     product_id: int = Column(Integer, ForeignKey('products.id'), nullable=False)
     quantity: int = Column(Integer, default=1, nullable=False)
+
+    # Нужен для selectinload()
+    product = relationship("Product", lazy="raise")
 
     # Пара id корзины и продукта как уникальный атрибут
     __table_args__ = (
