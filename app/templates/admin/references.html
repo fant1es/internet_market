@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block title %}Админка: бренды и категории{% endblock %}
+
+{% block content %}
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="mb-0">Бренды и категории</h1>
+    <a href="/admin" class="btn btn-outline-secondary">← К списку товаров</a>
+  </div>
+
+  {# Вкладки переключает JS: таблица и модалка у них общие #}
+  <ul class="nav nav-tabs mb-3" id="ref-tabs">
+    <li class="nav-item">
+      <button type="button" class="nav-link active" data-kind="brands">Бренды</button>
+    </li>
+    <li class="nav-item">
+      <button type="button" class="nav-link" data-kind="categories">Категории</button>
+    </li>
+  </ul>
+
+  <div class="d-flex justify-content-end mb-3">
+    <button type="button" id="add-btn" class="btn btn-primary">+ Добавить</button>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-hover align-middle">
+      <thead>
+        <tr>
+          <th>Название</th>
+          <th>Slug</th>
+          <th class="text-end">Товаров</th>
+          <th id="status-col">Статус</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="ref-body"></tbody>
+    </table>
+  </div>
+
+  {# Модальное окно создания и редактирования #}
+  <div class="modal fade" id="ref-modal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <form id="ref-form" class="modal-content" novalidate>
+        <div class="modal-header">
+          <h5 class="modal-title" id="ref-modal-title"></h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+        </div>
+
+        <div class="modal-body">
+          {# Ошибки сервера показываем внутри окна: общий блок #alerts закрыт затемнением #}
+          <div id="ref-modal-error" class="alert alert-danger d-none"></div>
+
+          <div class="mb-3">
+            <label for="ref-name" class="form-label fw-bold">Название <span class="text-danger">*</span></label>
+            <input type="text" id="ref-name" class="form-control" maxlength="100" required>
+          </div>
+
+          <div class="mb-3">
+            <label for="ref-slug" class="form-label fw-bold">Slug <span class="text-danger">*</span></label>
+            <input type="text" id="ref-slug" class="form-control" maxlength="100" required
+                   pattern="[a-z0-9]+(-[a-z0-9]+)*">
+            <div class="form-text">
+              Латиница, цифры и дефисы, например <code>smart-home</code>. При создании подставляется из названия
+            </div>
+          </div>
+
+          <div id="ref-active-wrap" class="form-check form-switch d-none">
+            <input type="checkbox" role="switch" id="ref-active" class="form-check-input" checked>
+            <label for="ref-active" class="form-check-label">Показывать на сайте</label>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Отмена</button>
+          <button type="submit" class="btn btn-primary" id="ref-save">Сохранить</button>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  <script src="/static/js/admin/admin_references.js"></script>
+{% endblock %}
