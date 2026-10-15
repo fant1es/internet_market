@@ -2,6 +2,20 @@
 const cartCount = document.getElementById("cart-count");
 const cartRoot = document.getElementById("cart-root"); // есть только на странице корзины
 
+// id товаров, которые сейчас лежат в корзине
+const cartProductIds = new Set();
+
+// Приводит все кнопки "В корзину" на странице в соответствие с корзиной
+function syncCartButtons() {
+    document.querySelectorAll(".add-to-cart").forEach((btn) => {
+        const inCart = cartProductIds.has(Number(btn.dataset.id));
+        btn.classList.toggle("btn-primary", !inCart);
+        btn.classList.toggle("btn-outline-primary", inCart);
+        btn.classList.toggle("in-cart", inCart);
+        btn.textContent = inCart ? "В корзине" : "В корзину";
+    });
+}
+
 function updateCartBadge(cart) {
     if (cartCount) cartCount.textContent = cart.total_quantity;
 }
@@ -9,6 +23,9 @@ function updateCartBadge(cart) {
 // Единая точка обновления: счётчик в шапке + страница корзины (если мы на ней)
 function refreshCartUI(cart) {
     updateCartBadge(cart);
+    cartProductIds.clear();
+    cart.items.forEach((i) => cartProductIds.add(i.product.id));
+    syncCartButtons();
     if (cartRoot) renderCart(cart);
 }
 
@@ -74,6 +91,11 @@ document.addEventListener("click", async (e) => {
     const btn = e.target.closest(".add-to-cart");
     if (!btn) return;
 
+    if (btn.classList.contains("in-cart")) {
+        location.href = "/my-cart";
+        return;
+    }
+
     btn.disabled = true;
     try {
         const cart = await api("/cart/items", {
@@ -125,3 +147,11 @@ if (cartRoot) {
 }
 
 if (cartCount) loadCart();
+
+// Возврат на страницу из bfcache (Alt + ←): скрипты заново не запускаются,
+// поэтому состояние корзины нужно перезапросить вручную
+window.addEventListener("pageshow", (e) => {
+    if (!e.persisted) return;
+    document.getElementById("alerts").innerHTML = ""; // убираем устаревшие уведомления
+    if (cartCount) loadCart();
+});

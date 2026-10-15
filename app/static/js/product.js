@@ -43,12 +43,13 @@ function renderProduct(p) {
 
           <h2 class="h6">Описание</h2>
           <p style="white-space: pre-line;">${escapeHtml(p.description ?? "Описание отсутствует")}</p>
-          <button class="btn btn-primary add-to-cart"
-                  data-id="${p.id}" ${inStock ? "" : "disabled"}>
-            ${inStock ? "В корзину" : "Нет в наличии"}
-          </button>
+          ${inStock
+            ? `<button class="btn btn-primary add-to-cart" data-id="${p.id}">В корзину</button>`
+            : `<button class="btn btn-secondary" disabled>Нет в наличии</button>`}
         </div>
       </div>`;
+
+    syncCartButtons();
 }
 
 async function loadProduct() {

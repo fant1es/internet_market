@@ -32,14 +32,16 @@ function renderProducts(items) {
                 <a href="/product/${p.id}" class="text-decoration-none">${escapeHtml(p.name)}</a>
               </h6>
               <div class="fw-bold mb-3">${formatPrice(p.price)}</div>
-              <button class="btn btn-primary btn-sm mt-auto add-to-cart"
-                      data-id="${p.id}" ${inStock ? "" : "disabled"}>
-                ${inStock ? "В корзину" : "Нет в наличии"}
-              </button>
+              ${inStock
+                ? `<button class="btn btn-primary btn-sm mt-auto add-to-cart"
+                           data-id="${p.id}">В корзину</button>`
+                : `<button class="btn btn-secondary btn-sm mt-auto" disabled>Нет в наличии</button>`}
             </div>
           </div>
         </div>`;
     }).join("");
+
+    syncCartButtons();
 }
 
 // Номер последнего запроса: защита от гонки, когда старый ответ приходит позже нового
