@@ -17,10 +17,16 @@ function renderProducts(items) {
     // Генерация блока для каждого продукта
     productsGrid.innerHTML = items.map((p) => {
         const inStock = p.stock_quantity > 0;
+        const imageUrl = productImageUrl(p);
         return `
         <div class="col">
           <div class="card h-100">
-            <div class="bg-light text-center text-muted py-5">Нет фото</div>
+            <a href="/product/${p.id}" class="ratio ratio-4x3 bg-light text-decoration-none">
+                ${imageUrl
+                ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(p.name)}"
+                    class="card-img-top object-fit-contain" loading="lazy">`
+                : `<div class="d-flex align-items-center justify-content-center text-muted">Нет фото</div>`}
+            </a>
             <div class="card-body d-flex flex-column">
               <h6 class="card-title">
                 <a href="/product/${p.id}" class="text-decoration-none">${escapeHtml(p.name)}</a>

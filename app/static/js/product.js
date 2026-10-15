@@ -14,7 +14,7 @@ function renderProduct(p) {
       <div class="row g-4">
         <div class="col-md-5">
           ${img
-            ? `<img src="${img}" alt="${escapeHtml(p.name)}" class="img-fluid rounded">`
+            ? `<img src="${img}" alt="${escapeHtml(p.name)}" class="img-fluid rounded" loading="lazy">`
             : `<div class="bg-light text-center text-muted py-5 rounded">Нет фото</div>`}
         </div>
 
