@@ -14,7 +14,8 @@ function renderProduct(p) {
       <div class="row g-4">
         <div class="col-md-5">
           ${img
-            ? `<img src="${img}" alt="${escapeHtml(p.name)}" class="img-fluid rounded" loading="lazy">`
+            ? `<img src="${escapeHtml(img)}" alt="${escapeHtml(p.name)}" 
+                style="max-height: 480px; object-fit: contain;" class="img-fluid rounded" loading="lazy">`
             : `<div class="bg-light text-center text-muted py-5 rounded">Нет фото</div>`}
         </div>
 
@@ -53,7 +54,7 @@ function renderProduct(p) {
 async function loadProduct() {
     try {
         const [product, categories, brands] = await Promise.all([
-            api(`/admin/products/${productId}`),
+            api(`/products/${productId}`),
             api("/categories"),
             api("/brands"),
         ]);
