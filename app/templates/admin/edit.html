@@ -26,9 +26,16 @@
               Удалить фото
             </button>
             <div class="text-start">
-              <label for="image_file" class="form-label">Выберите файл изображения</label>
-              <input type="file" class="form-control" id="image_file" name="image"
+              <label class="form-label">Изображение товара</label>
+
+              {# Настоящий input спрятан, но работает: label ниже открывает диалог выбора файла #}
+              <input type="file" id="image_file" name="image" class="d-none"
                      accept="image/jpeg,image/png,image/webp">
+
+              <div class="input-group">
+                <label for="image_file" class="btn btn-outline-secondary">Выбрать фото</label>
+                <span id="image-file-name" class="form-control text-muted text-truncate">Файл не выбран</span>
+              </div>
               <div class="form-text">Поддерживаются JPEG, PNG и WebP, до 5 МБ</div>
             </div>
           </div>

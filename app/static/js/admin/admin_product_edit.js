@@ -11,6 +11,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const brandSelect = document.getElementById("brand");
     const submitBtn = form.querySelector('button[type="submit"]');
     const deleteImageBtn = document.getElementById("image-delete");
+    const fileNameLabel = document.getElementById("image-file-name");
 
     const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
     const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -43,6 +44,12 @@ document.addEventListener("DOMContentLoaded", async () => {
         deleteImageBtn.classList.toggle("d-none", !currentImageUrl);
     }
 
+    // Подпись рядом с кнопкой выбора файла (нативную подпись браузера не переопределить)
+    function updateFileName() {
+        fileNameLabel.textContent = selectedFile ? selectedFile.name : "Файл не выбран";
+        fileNameLabel.classList.toggle("text-muted", !selectedFile);
+    }
+
     function resetSelectedFile() {
         selectedFile = null;
         imageInput.value = "";
@@ -50,6 +57,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             URL.revokeObjectURL(previewObjectUrl);  // иначе утечка памяти
             previewObjectUrl = null;
         }
+        updateFileName();
     }
 
     // Локальное превью + проверка на клиенте (сервер всё равно перепроверит)
@@ -73,6 +81,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
 
         selectedFile = file;
+        updateFileName();
         previewObjectUrl = URL.createObjectURL(file);
         showImage(previewObjectUrl);
     });
