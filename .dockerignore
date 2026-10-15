@@ -1,5 +1,7 @@
 .venv/
 __pycache__/
 *.pyc
-.env
+.env*
 .git/
+app/static/img/products/*
+!app/static/img/products/.gitkeep
