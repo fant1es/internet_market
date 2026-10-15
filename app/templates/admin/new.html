@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block title %}Новый товар{% endblock %}
+
+{% block content %}
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <a href="/admin" class="btn btn-outline-secondary">← К списку товаров</a>
+    <h2 class="h4 mb-0">Новый товар</h2>
+  </div>
+
+  <form id="product-form" class="needs-validation" novalidate>
+    <div class="row g-4">
+
+      {# Левая колонка: изображение, видимость и склад #}
+      <div class="col-lg-4">
+        <div class="card shadow-sm mb-4">
+          <div class="card-body text-center">
+            <h5 class="card-title text-start mb-3">Изображение</h5>
+
+            {# Какую из двух частей показать, решает JS #}
+            <div class="ratio ratio-4x3 bg-light rounded border mb-3">
+              <img id="image-preview" alt="Превью товара" class="d-none object-fit-contain">
+              <div id="image-empty" class="d-flex align-items-center justify-content-center text-muted">Нет фото</div>
+            </div>
+
+            <div class="text-start">
+              <label class="form-label">Изображение товара</label>
+
+              {# Настоящий input спрятан, но работает: label ниже открывает диалог выбора файла #}
+              <input type="file" id="image_file" name="image" class="d-none"
+                     accept="image/jpeg,image/png,image/webp">
+
+              <div class="input-group">
+                <label for="image_file" class="btn btn-outline-secondary">Выбрать фото</label>
+                <span id="image-file-name" class="form-control text-muted text-truncate">Файл не выбран</span>
+              </div>
+              <div class="form-text">Поддерживаются JPEG, PNG и WebP, до 5 МБ. Фото можно добавить и позже</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <h5 class="card-title mb-3">Видимость и склад</h5>
+
+            <div class="form-check form-switch mb-3">
+              <input class="form-check-input" type="checkbox" role="switch" id="is_active" name="is_active" checked>
+              <label class="form-check-label fw-bold" for="is_active">Отображать на сайте</label>
+              <div class="form-text">Скрыть или показать товар в каталоге</div>
+            </div>
+
+            <hr class="my-3">
+
+            <div class="mb-2">
+              <label for="stock_quantity" class="form-label fw-bold">Количество на складе, шт. <span class="text-danger">*</span></label>
+              <input type="number" min="0" step="1" class="form-control" id="stock_quantity" name="stock_quantity"
+                     value="0" required>
+              <div class="form-text">Если указать 0, товар будет отображаться как «Нет в наличии»</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {# Правая колонка: основная информация и цены #}
+      <div class="col-lg-8">
+        <div class="card shadow-sm mb-4">
+          <div class="card-body">
+            <h5 class="card-title mb-3">Основная информация</h5>
+
+            <div class="mb-3">
+              <label for="name" class="form-label fw-bold">Название товара <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="name" name="name" required placeholder="Введите название товара">
+            </div>
+
+            <div class="row g-3 mb-3">
+              <div class="col-md-4">
+                <label for="sku" class="form-label">Артикул (SKU) <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="sku" name="sku" required placeholder="ART-12345">
+              </div>
+
+              <div class="col-md-4">
+                <label for="category" class="form-label">Категория <span class="text-danger">*</span></label>
+                {# Варианты подставит JS из /categories #}
+                <select class="form-select" id="category" name="category_id" required>
+                  <option value="">Загрузка...</option>
+                </select>
+              </div>
+
+              <div class="col-md-4">
+                <label for="brand" class="form-label">Бренд</label>
+                {# Варианты подставит JS из /brands #}
+                <select class="form-select" id="brand" name="brand_id">
+                  <option value="">Загрузка...</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label for="description" class="form-label">Описание товара</label>
+              <textarea class="form-control" id="description" name="description" rows="5" placeholder="Подробное описание..."></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="card shadow-sm mb-4">
+          <div class="card-body">
+            <h5 class="card-title mb-3">Ценообразование</h5>
+
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label for="price" class="form-label">Цена, BYN <span class="text-danger">*</span></label>
+                <input type="number" step="0.01" min="0.01" class="form-control" id="price" name="price"
+                       required placeholder="0.00">
+                <div class="form-text">Цена, по которой товар продаётся</div>
+              </div>
+
+              <div class="col-md-6">
+                <label for="old_price" class="form-label">Старая цена (до скидки), BYN</label>
+                <input type="number" step="0.01" min="0.01" class="form-control" id="old_price" name="old_price"
+                       placeholder="Оставьте пустым, если скидки нет">
+                <div class="form-text">Должна быть больше текущей цены</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {# Кнопки действия #}
+        <div class="d-flex justify-content-end gap-2">
+          <a href="/admin" class="btn btn-outline-secondary px-4">Отменить</a>
+          <button type="submit" class="btn btn-primary px-4">Создать товар</button>
+        </div>
+
+      </div>
+    </div>
+  </form>
+{% endblock %}
+
+{% block scripts %}
+  <script src="/static/js/admin/admin_product_new.js"></script>
+{% endblock %}
