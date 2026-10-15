@@ -10,6 +10,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const categorySelect = document.getElementById("category");
     const brandSelect = document.getElementById("brand");
     const submitBtn = form.querySelector('button[type="submit"]');
+    const deleteImageBtn = document.getElementById("image-delete");
 
     const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
     const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -36,6 +37,10 @@ document.addEventListener("DOMContentLoaded", async () => {
             imagePreview.classList.add("d-none");
             imageEmpty.classList.remove("d-none");
         }
+    }
+
+    function updateDeleteBtn() {
+        deleteImageBtn.classList.toggle("d-none", !currentImageUrl);
     }
 
     function resetSelectedFile() {
@@ -99,6 +104,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         // Изображение: если картинки нет, остаётся заглушка «Нет фото»
         currentImageUrl = productImageUrl(product);
         showImage(currentImageUrl);
+        updateDeleteBtn();
     }
     catch (err) {
         if (err.status === 404) {
@@ -110,6 +116,26 @@ document.addEventListener("DOMContentLoaded", async () => {
             showAlert(errorText(err));
         }
     }
+
+    deleteImageBtn.addEventListener("click", async () => {
+        if (!confirm("Удалить изображение товара?")) return;
+
+        deleteImageBtn.disabled = true;
+        try {
+            await api(`/admin/products/${productId}/image`, { method: "DELETE" });
+            currentImageUrl = null;
+            resetSelectedFile();   // выбранный, но не сохранённый файл тоже сбрасываем
+            showImage(null);
+            updateDeleteBtn();
+            showAlert("Изображение удалено", "success");
+        }
+        catch (err) {
+            showAlert(errorText(err));
+        }
+        finally {
+            deleteImageBtn.disabled = false;
+        }
+    });
 
     form.addEventListener("submit", async (e) => {
         e.preventDefault();
@@ -159,6 +185,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 currentImageUrl = productImageUrl(updated);
                 resetSelectedFile();
                 showImage(currentImageUrl);
+                updateDeleteBtn();
             }
             catch (err) {
                 showAlert(`Товар сохранён, но фото не загрузилось: ${errorText(err)}`, "warning");
