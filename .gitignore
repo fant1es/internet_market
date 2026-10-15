@@ -313,4 +313,8 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
+# Для картинок
+app/static/img/products/*
+!app/static/img/products/.gitkeep
+
 # End of https://www.toptal.com/developers/gitignore/api/python,windows,pycharm
