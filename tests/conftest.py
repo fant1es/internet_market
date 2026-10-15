@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from app.main import app
 from app.database import Base, get_db
 from app.config import settings
-from app.models import Brand, Category, Product, User
+from app.models import Brand, Cart, Category, Product, User
 from app.models.user import UserRole
 from app.utils.security import hash_password
 
@@ -67,9 +67,12 @@ async def client(db_session):
 # Все клиенты работают с одним приложением и одной тестовой сессией
 
 async def _create_user(session, email: str, role: UserRole) -> User:
-    """Создаёт пользователя напрямую в БД без регистрации."""
+    """Создаёт пользователя напрямую в БД без регистрации.
+    Корзину заводим сразу, как это делает /auth/register: у каждого пользователя она есть."""
     user = User(name="Test User", email=email, password_hash=hash_password(TEST_PASSWORD), role=role)
     session.add(user)
+    await session.commit()
+    session.add(Cart(user_id=user.id))
     await session.commit()
     return user
 
@@ -95,6 +98,15 @@ async def admin_client(client, db_session):
 async def user_client(client, db_session):
     await _create_user(db_session, "user@example.com", UserRole.USER)
     ac = await _login("user@example.com")
+    yield ac
+    await ac.aclose()
+
+
+@pytest_asyncio.fixture(scope="function")
+async def other_user_client(client, db_session):
+    """Второй обычный пользователь: для проверок изоляции данных между аккаунтами."""
+    await _create_user(db_session, "other@example.com", UserRole.USER)
+    ac = await _login("other@example.com")
     yield ac
     await ac.aclose()
 # endregion
