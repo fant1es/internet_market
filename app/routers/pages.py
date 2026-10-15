@@ -76,8 +76,8 @@ async def admin_product_edit_page(request: Request, product_id: int, user: Curre
     return templates.TemplateResponse(request, "admin/edit.html", {"user": user, "product_id": product_id})
 
 
-@router.get("/admin/new_reference")
-async def admin_new_reference_page(request: Request, user: CurrentUserOptional):
+@router.get("/admin/references")
+async def admin_references_page(request: Request, user: CurrentUserOptional):
     redirect = _admin_redirect(user)
     if redirect is not None:
         return redirect
