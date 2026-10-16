@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, ForeignKey, UniqueConstraint
+from sqlalchemy import Column, Integer, ForeignKey, UniqueConstraint, CheckConstraint
 from sqlalchemy.orm import relationship
 
 from app.database import Base
@@ -14,8 +14,7 @@ class CartItem(Base):
     # Нужен для selectinload()
     product = relationship("Product", lazy="raise")
 
-    # Пара id корзины и продукта как уникальный атрибут
     __table_args__ = (
         UniqueConstraint('cart_id', 'product_id', name='uq_cart_product'),
+        CheckConstraint("quantity > 0", name="ck_cart_items_quantity_pos"),
     )
-

@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, Text, DECIMAL, DateTime, func
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, Text, DECIMAL, DateTime, CheckConstraint, func
 
 from app.database import Base
 
@@ -23,3 +23,7 @@ class Product(Base):
 
     created_at: datetime = Column(DateTime, nullable=False, server_default=func.now())
     is_active: bool = Column(Boolean, default=True, nullable=False)
+
+    __table_args__ = (
+        CheckConstraint("stock_quantity >= 0", name="ck_products_stock_nonneg"),
+    )

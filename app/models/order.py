@@ -2,6 +2,7 @@ from datetime import datetime
 from enum import Enum
 
 from sqlalchemy import Column, Integer, ForeignKey, Enum as SQLEnum, DECIMAL, Text, Boolean, DateTime, func
+from sqlalchemy.orm import relationship
 
 from app.database import Base
 
@@ -17,7 +18,7 @@ class Order(Base):
     __tablename__ = 'orders'
 
     id: int = Column(Integer, primary_key=True)
-    user_id: int = Column(Integer, ForeignKey('users.id'), nullable=False)
+    user_id: int = Column(Integer, ForeignKey('users.id'), nullable=False, index=True)
     status: str = Column(SQLEnum(OrderStatus,
                                  values_callable=lambda obj: [e.value for e in obj],
                                  native_enum=False), nullable=False, default=OrderStatus.PENDING)
@@ -27,3 +28,6 @@ class Order(Base):
     receipt_sent: bool = Column(Boolean, nullable=False, default=False)
 
     created_at: datetime = Column(DateTime, nullable=False, server_default=func.now())
+
+    # Загружаем явно через selectinload()
+    items = relationship("OrderItem", back_populates="order", lazy="raise")
