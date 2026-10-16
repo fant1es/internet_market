@@ -18,7 +18,7 @@ class ProductIn(BaseModel):
     description: str | None = None
     price: Decimal = Field(gt=0, max_digits=10, decimal_places=2)
     old_price: Decimal | None = Field(None, gt=0, max_digits=10, decimal_places=2)
-    stock_quantity: int = Field(0, ge=0)
+    stock_quantity: int = Field(0, ge=0, le=1_000_000)
     is_active: bool = True
 
     @model_validator(mode="after")

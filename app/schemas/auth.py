@@ -1,4 +1,5 @@
 import re
+from decimal import Decimal
 
 from pydantic import BaseModel, EmailStr, ConfigDict, field_validator
 
@@ -35,5 +36,6 @@ class UserOut(BaseModel):
     email: EmailStr
     name: str
     role: str
+    balance: Decimal
     model_config = ConfigDict(from_attributes=True)
 # endregion

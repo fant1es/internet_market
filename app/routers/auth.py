@@ -31,11 +31,7 @@ async def register(data: RegisterSchema,
     await db.commit()
     await db.refresh(user)
 
-    return {"id": user.id,
-            "email": user.email,
-            "name": user.name,
-            "role": user.role
-            }
+    return user
 
 
 @auth_router.post("/login", response_model=UserOut)

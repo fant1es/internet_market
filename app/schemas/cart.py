@@ -4,12 +4,12 @@ from app.schemas.product import ProductOut
 
 
 class CartItemAdd(BaseModel):
-    product_id: int
-    quantity: int = Field(1, ge=1)
+    product_id: int = Field(ge=1, le=2_147_483_647)
+    quantity: int = Field(1, ge=1, le=1_000_000)
 
 
 class CartItemUpdate(BaseModel):
-    quantity: int = Field(ge=1)
+    quantity: int = Field(ge=1, le=1_000_000)
 
 
 class CartItemOut(BaseModel):
