@@ -1,8 +1,10 @@
 class ApiError extends Error {
   constructor(status, data) {
-    super(data?.detail?.toString() || `HTTP ${status}`);
-    this.status = status;
-    this.data = data;
+      // При передаче обьекта нужно обрабатывать его, чтобы не было сообщения [object Object]
+      const detail = data?.detail;
+      super(typeof detail === "string" ? detail : detail?.message || `HTTP ${status}`);
+      this.status = status;
+      this.data = data;
   }
 }
 
@@ -46,6 +48,10 @@ function errorText(err) {
   const detail = err.data?.detail;
   if (Array.isArray(detail)) {
     return detail.map(e => e.msg).join("; ");
+  }
+  // Отдельная обработка для обьектов
+  if (detail && typeof detail === "object") {
+    return detail.message || err.message;
   }
   return detail || err.message;
 }
