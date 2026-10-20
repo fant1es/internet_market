@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from starlette.staticfiles import StaticFiles
 
-from app.routers import pages, products, brands, categories, carts
+from app.routers import pages, products, brands, categories, carts, balance
 from app.routers import admin_references, admin_products
 from app.routers.auth import auth_router
 
@@ -16,6 +16,7 @@ app.include_router(admin_products.router)
 app.include_router(admin_references.brands_admin)
 app.include_router(admin_references.categories_admin)
 app.include_router(carts.router)
+app.include_router(balance.router)
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 @app.get("/health")
