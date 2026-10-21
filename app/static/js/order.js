@@ -41,9 +41,7 @@ if (checkoutForm) {
         try {
             const order = await api("/orders", { method: "POST", body });
             modal.hide();
-            cartProblems.clear();
-            showAlert(`Заказ №${order.id} оформлен`, "success");
-            await loadCart(); // корзина на сервере уже очищена
+            location.href = "/my-orders";
         }
         catch (err) {
             modal.hide();
