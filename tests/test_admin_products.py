@@ -1,8 +1,3 @@
-"""
-Запуск (внутри контейнера):
-    docker compose exec web pytest tests/test_admin_products.py -v
-"""
-
 from decimal import Decimal
 
 import pytest

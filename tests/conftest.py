@@ -62,6 +62,23 @@ async def client(db_session):
     app.dependency_overrides.clear()
 
 
+@pytest_asyncio.fixture(scope="function")
+async def isolated_sessions(client, db_session):
+    """
+    Каждый запрос к приложению получает собственную сессию и соединение.
+    Нужна для тестов гонок.
+    """
+    engine = create_async_engine(TEST_DATABASE_URL, poolclass=NullPool)
+    maker = async_sessionmaker(bind=engine, expire_on_commit=False)
+
+    async def override_get_db():
+        async with maker() as session:
+            yield session
+
+    app.dependency_overrides[get_db] = override_get_db
+    yield
+    await engine.dispose()
+
 # region --- Авторизованные клиенты ------------------------------------------------
 # Cookie хранятся внутри каждого AsyncClient, поэтому для каждой роли свой клиент.
 # Все клиенты работают с одним приложением и одной тестовой сессией
@@ -170,6 +187,11 @@ async def make_product(db_session, make_category):
         db_session.add(product)
         await db_session.commit()
         await db_session.refresh(product)
+
+        # Отсоединяем созданный товар от сессии, чтобы откат его не затронул,
+        # т.к. откат отключает все обьекты в данной сессии)
+        db_session.expunge(product)
+
         return product
 
     return _make

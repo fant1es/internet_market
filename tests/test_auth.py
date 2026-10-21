@@ -1,8 +1,3 @@
-"""
-Запуск (внутри контейнера):
-    docker compose exec web pytest tests/test_auth.py -v
-"""
-
 import pytest
 from sqlalchemy import select
 
