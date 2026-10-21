@@ -4,6 +4,10 @@ const cartRoot = document.getElementById("cart-root"); // есть только 
 
 // id товаров, которые сейчас лежат в корзине
 const cartProductIds = new Set();
+// Последняя загруженная корзина (из неё модалка оформления берёт список товаров и сумму)
+let currentCart = null;
+// product_id -> текст проблемы, пришедшей с сервера при оформлении заказа
+const cartProblems = new Map();
 
 // Приводит все кнопки "В корзину" на странице в соответствие с корзиной
 function syncCartButtons() {
@@ -22,9 +26,16 @@ function updateCartBadge(cart) {
 
 // Единая точка обновления: счётчик в шапке + страница корзины (если мы на ней)
 function refreshCartUI(cart) {
+    currentCart = cart;
     updateCartBadge(cart);
     cartProductIds.clear();
     cart.items.forEach((i) => cartProductIds.add(i.product.id));
+
+    // Проблемы товаров, которых в корзине уже нет, больше не актуальны
+    for (const id of cartProblems.keys()) {
+        if (!cartProductIds.has(id)) cartProblems.delete(id);
+    }
+
     syncCartButtons();
     if (cartRoot) renderCart(cart);
 }
@@ -60,19 +71,21 @@ function renderCart(cart) {
     const rows = cart.items.map(({ id, product: p, quantity, subtotal }) => {
         const imageUrl = productImageUrl(p);
         const oldPrice = oldPriceOf(p);
+        const problem = cartProblems.get(p.id)
         return `
-        <div class="d-flex gap-3 p-3 border-bottom cart-item">
+        <div class="d-flex gap-3 p-3 border-bottom cart-item ${problem ? "border border-danger bg-danger-subtle" : ""}"
+             data-product-id="${p.id}">
           <a href="/product/${p.id}" class="flex-shrink-0 bg-light rounded d-flex align-items-center justify-content-center"
              style="width: 140px; height: 140px;">
-            ${imageUrl
+             ${imageUrl
                 ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(p.name)}"
                         class="w-100 h-100 object-fit-contain rounded">`
                 : `<span class="text-muted small">Нет фото</span>`}
           </a>
-
           <div class="flex-grow-1 d-flex flex-column flex-md-row gap-3">
             <div class="flex-grow-1">
               <a href="/product/${p.id}" class="fs-5 fw-semibold text-decoration-none">${escapeHtml(p.name)}</a>
+              ${problem ? `<div class="text-danger small mt-1">${escapeHtml(problem)}</div>` : ""}
               <div class="mt-2">
                 <span class="fs-5 fw-bold">${formatPrice(p.price)}</span>
                 ${oldPrice ? `<s class="text-muted ms-2">${formatPrice(oldPrice)}</s>` : ""}
@@ -124,7 +137,9 @@ function renderCart(cart) {
                 <span class="fs-5">К оплате</span>
                 <strong class="fs-4 text-nowrap">${formatPrice(total)}</strong>
               </div>
-              <button class="btn btn-success w-100" disabled title="Будет на следующем шаге">Оформить заказ</button>
+              <button class="btn btn-success w-100" data-bs-toggle="modal" data-bs-target="#checkout-modal">
+              Оформить заказ
+              </button>
             </div>
           </div>
         </div>
@@ -174,6 +189,8 @@ if (cartRoot) {
         if (!input) return;
 
         const quantity = Number(input.value);
+        // Если пользователь поправил количество, то старая подсказка про остаток неактуальна
+        cartProblems.delete(Number(input.closest(".cart-item").dataset.productId));
         try {
             if (!Number.isInteger(quantity) || quantity < 1) {
                 throw new Error("Количество должно быть целым числом от 1");
