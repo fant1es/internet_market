@@ -7,7 +7,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models import Brand, Cart, CartItem, Order, OrderItem, Product
-
+from app.models import BalanceTransaction, Brand, Cart, CartItem, Order, OrderItem, Product, User
+from app.models.balance_transaction import TransactionType
+from app.models.order import OrderStatus
 
 async def _create(db: AsyncSession, user_id: int, shipping_address: str) -> int:
     # Блокируем корзину с помощью with_for_update() для защиты от двух одновременных запросов
@@ -110,3 +112,84 @@ async def list_orders(db: AsyncSession, user_id: int) -> list[Order]:
         .order_by(Order.id.desc())
         .execution_options(populate_existing=True)
     )).all()
+
+
+# noinspection PyTypeChecker
+async def _lock_order(db: AsyncSession, order_id: int, user_id: int) -> Order:
+    # Фильтр по user_id обязателен: иначе можно оплатить или отменить чужой заказ по id
+    order = await db.scalar(
+        select(Order).where(Order.id == order_id, Order.user_id == user_id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
+    )
+    if order is None:
+        raise HTTPException(404, "Заказ не найден")
+    return order
+
+
+# noinspection PyTypeChecker
+async def _lock_user(db: AsyncSession, user_id: int) -> User:
+    return await db.scalar(
+        select(User).where(User.id == user_id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
+    )
+
+
+async def _pay(db: AsyncSession, order_id: int, user_id: int) -> None:
+    order = await _lock_order(db, order_id, user_id)
+    # Статус проверяем уже под блокировкой: двойной клик не спишет деньги дважды
+    if order.status != OrderStatus.PENDING:
+        raise HTTPException(409, "Заказ нельзя оплатить: он уже не в ожидании оплаты")
+
+    user = await _lock_user(db, user_id)
+    if user.balance < order.total_amount:
+        raise HTTPException(402, "Недостаточно средств на балансе")
+
+    user.balance -= order.total_amount
+    order.status = OrderStatus.PAID
+    db.add(BalanceTransaction(user_id=user_id, order_id=order.id,
+                              amount=-order.total_amount, type=TransactionType.PAYMENT))
+
+
+async def _cancel(db: AsyncSession, order_id: int, user_id: int) -> None:
+    order = await _lock_order(db, order_id, user_id)
+    if order.status not in (OrderStatus.PENDING, OrderStatus.PAID):
+        raise HTTPException(409, "Этот заказ нельзя отменить")
+
+    # Оплаченный заказ: возвращаем деньги на баланс
+    if order.status == OrderStatus.PAID:
+        user = await _lock_user(db, user_id)
+        user.balance += order.total_amount
+        db.add(BalanceTransaction(user_id=user_id, order_id=order.id,
+                                  amount=order.total_amount, type=TransactionType.REFUND))
+
+    # Возвращаем остатки: один атомарный UPDATE на позицию, порядок по product_id
+    items = (await db.scalars(
+        select(OrderItem).where(OrderItem.order_id == order.id).order_by(OrderItem.product_id)
+    )).all()
+    for i in items:
+        await db.execute(
+            update(Product).where(Product.id == i.product_id)
+            .values(stock_quantity=Product.stock_quantity + i.quantity)
+        )
+
+    order.status = OrderStatus.CANCELLED
+
+
+async def _run(db: AsyncSession, action, order_id: int, user_id: int) -> int:
+    try:
+        await action(db, order_id, user_id)
+        await db.commit()
+    except Exception:
+        await db.rollback()
+        raise
+    return order_id
+
+
+async def pay_order(db: AsyncSession, order_id: int, user_id: int) -> int:
+    return await _run(db, _pay, order_id, user_id)
+
+
+async def cancel_order(db: AsyncSession, order_id: int, user_id: int) -> int:
+    return await _run(db, _cancel, order_id, user_id)

@@ -21,3 +21,15 @@ async def checkout(data: CheckoutIn,
 async def my_orders(db: AsyncSession = Depends(get_db),
                     user=Depends(get_current_user)):
     return await order_service.list_orders(db, user.id)
+
+
+@router.post("/{order_id}/pay", response_model=OrderOut, summary="Оплатить заказ с баланса")
+async def pay(order_id: int, db: AsyncSession = Depends(get_db), user=Depends(get_current_user)):
+    await order_service.pay_order(db, order_id, user.id)
+    return await order_service.get_order(db, order_id)
+
+
+@router.post("/{order_id}/cancel", response_model=OrderOut, summary="Отменить заказ")
+async def cancel(order_id: int, db: AsyncSession = Depends(get_db), user=Depends(get_current_user)):
+    await order_service.cancel_order(db, order_id, user.id)
+    return await order_service.get_order(db, order_id)

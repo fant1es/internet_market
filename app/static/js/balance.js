@@ -10,6 +10,17 @@ function setBalance(value) {
     if (current) current.textContent = text;
 }
 
+// Запрашивает актуальный баланс и обновляет шапку
+async function refreshBalance() {
+    try {
+        const me = await api("/auth/me");
+        setBalance(me.balance);
+    }
+    catch (err) {
+        showAlert(errorText(err));
+    }
+}
+
 if (balanceAmount) {
     setBalance(balanceAmount.dataset.balance); // значение пришло из шаблона
 

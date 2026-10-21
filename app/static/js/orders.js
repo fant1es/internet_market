@@ -14,6 +14,15 @@ function formatDate(iso) {
         .toLocaleString("ru-RU", { dateStyle: "short", timeStyle: "short" });
 }
 
+// Кнопки зависят от статуса: оплатить можно только pending, отменить pending и paid
+function actionsHtml(order) {
+    const pay = `<button class="btn btn-success btn-sm order-pay" data-id="${order.id}">Оплатить</button>`;
+    const cancel = `<button class="btn btn-outline-danger btn-sm order-cancel" data-id="${order.id}">Отменить</button>`;
+    if (order.status === "pending") return pay + cancel;
+    if (order.status === "paid") return cancel;
+    return "";
+}
+
 function renderOrder(order) {
     const st = STATUSES[order.status] ?? { label: order.status, cls: "bg-secondary" };
 
@@ -36,7 +45,7 @@ function renderOrder(order) {
         <div class="text-muted small">Адрес доставки: ${escapeHtml(order.shipping_address ?? "-")}</div>
       </div>
       <div class="card-footer d-flex justify-content-between align-items-center">
-        <div class="order-actions d-flex gap-2"><!-- кнопки оплаты и отмены добавим следующим шагом --></div>
+        <div class="order-actions d-flex gap-2">${actionsHtml(order)}</div>
         <div>Итого: <strong class="fs-5 text-nowrap">${formatPrice(order.total_amount)}</strong></div>
       </div>
     </div>`;
@@ -69,5 +78,26 @@ if (ordersRoot) {
     // Возврат из bfcache, т.к. статусы могли измениться
     window.addEventListener("pageshow", (e) => {
         if (e.persisted) loadOrders();
+    });
+
+    ordersRoot.addEventListener("click", async (e) => {
+        const btn = e.target.closest(".order-pay, .order-cancel");
+        if (!btn) return;
+
+        const isPay = btn.classList.contains("order-pay");
+        if (!isPay && !confirm("Отменить заказ? Товары вернутся на склад, а если заказ оплачен, деньги вернутся на баланс.")) {
+            return;
+        }
+
+        btn.disabled = true; // защита от двойного клика
+        try {
+            await api(`/orders/${btn.dataset.id}/${isPay ? "pay" : "cancel"}`, { method: "POST" });
+            showAlert(isPay ? "Заказ оплачен" : "Заказ отменён", "success");
+        }
+        catch (err) {
+            showAlert(errorText(err));
+        }
+        // В любом исходе перерисовываем: статус мог измениться в другой вкладке
+        await Promise.all([loadOrders(), refreshBalance()]);
     });
 }
