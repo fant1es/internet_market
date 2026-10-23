@@ -4,7 +4,7 @@ from pathlib import Path
 
 from PIL import Image, ImageOps, UnidentifiedImageError
 
-# Папка app/static считается от файла сервиса
+# Папка app/static считается от файла модуля
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
 PRODUCTS_DIR = STATIC_DIR / "img" / "products"
 
