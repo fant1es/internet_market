@@ -22,6 +22,14 @@ def product_payload(category_id: int, **overrides) -> dict:
     }
 
 
+async def reload_product(db_session, product_id: int) -> Product:
+    """Перечитывает товар из БД, а не из identity map сессии."""
+    return await db_session.scalar(
+        select(Product).where(Product.id == product_id)
+        .execution_options(populate_existing=True)
+    )
+
+
 async def count_products(db_session) -> int:
     return await db_session.scalar(select(func.count(Product.id)))
 
@@ -346,9 +354,9 @@ async def test_update_product_success(admin_client, db_session, make_product, ma
     assert data["is_active"] is False
 
     # Проверяем, что изменения действительно записаны в БД
-    await db_session.refresh(product)
-    assert product.sku == "NEW-1"
-    assert product.is_active is False
+    reloaded = await reload_product(db_session, product.id)
+    assert reloaded.sku == "NEW-1"
+    assert reloaded.is_active is False
 
 
 async def test_update_product_can_clear_brand_and_old_price(admin_client, make_product, make_brand):
@@ -385,8 +393,8 @@ async def test_update_product_sku_taken_by_other(admin_client, db_session, make_
     ))
 
     assert response.status_code == 409
-    await db_session.refresh(product)
-    assert product.sku == "MINE"  # ничего не изменилось
+    reloaded = await reload_product(db_session, product.id)
+    assert reloaded.sku == "MINE"  # ничего не изменилось
 
 
 async def test_update_product_does_not_touch_image(admin_client, make_product):
