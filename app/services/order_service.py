@@ -6,10 +6,10 @@ from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.models import Brand, Cart, CartItem, Order, OrderItem, Product
 from app.models import BalanceTransaction, Brand, Cart, CartItem, Order, OrderItem, Product, User
 from app.models.balance_transaction import TransactionType
 from app.models.order import OrderStatus
+from app.utils.database import run_in_transaction
 
 async def _create(db: AsyncSession, user_id: int, shipping_address: str) -> int:
     # Блокируем корзину с помощью with_for_update() для защиты от двух одновременных запросов
@@ -177,19 +177,9 @@ async def _cancel(db: AsyncSession, order_id: int, user_id: int) -> None:
     order.status = OrderStatus.CANCELLED
 
 
-async def _run(db: AsyncSession, action, order_id: int, user_id: int) -> int:
-    try:
-        await action(db, order_id, user_id)
-        await db.commit()
-    except Exception:
-        await db.rollback()
-        raise
-    return order_id
-
-
 async def pay_order(db: AsyncSession, order_id: int, user_id: int) -> int:
-    return await _run(db, _pay, order_id, user_id)
+    return await run_in_transaction(db, _pay, order_id, user_id)
 
 
 async def cancel_order(db: AsyncSession, order_id: int, user_id: int) -> int:
-    return await _run(db, _cancel, order_id, user_id)
+    return await run_in_transaction(db, _cancel, order_id, user_id)
