@@ -93,4 +93,6 @@ async def cart_page(request: Request, user: CurrentUserOptional):
 
 @router.get("/my-orders")
 async def my_orders_page(request: Request, user: CurrentUserOptional):
+    if not user:
+        return RedirectResponse("/login")
     return templates.TemplateResponse("orders.html", {"request": request, "user": user})
