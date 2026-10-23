@@ -2,7 +2,6 @@ import math
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from sqlalchemy import func, or_, select
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -11,21 +10,13 @@ from app.models import Brand, Category, Product
 from app.schemas.admin_product import ActiveUpdate, ProductAdminListOut, ProductAdminOut, ProductIn
 from app.services import product_image_service
 from app.services.image_storage import MAX_IMAGE_BYTES
-from app.utils.database import get_or_404
+from app.utils.database import get_or_404, commit_or_409
 
 router = APIRouter(
     prefix="/admin/products",
     tags=["admin: products"],
     dependencies=[Depends(get_current_admin)], # Роутер доступен только администраторам
 )
-
-
-async def _get_or_404(db: AsyncSession, product_id: int) -> Product:
-    # Админ получает любые товары, в том числе и скрытые
-    product = await db.get(Product, product_id)
-    if product is None:
-        raise HTTPException(status_code=404, detail="Товар не найден")
-    return product
 
 
 # noinspection PyTypeChecker
@@ -45,24 +36,15 @@ async def _validate_refs(db: AsyncSession, data: ProductIn, product_id: int | No
         raise HTTPException(status_code=409, detail="Товар с таким артикулом уже существует")
 
 
-async def _commit(db: AsyncSession) -> None:
-    # Страховка на случай гонки: два запроса с одним артикулом прошли проверку одновременно
-    try:
-        await db.commit()
-    except IntegrityError:
-        await db.rollback()
-        raise HTTPException(status_code=409, detail="Товар с таким артикулом уже существует")
-
-
 # noinspection PyTypeChecker
 @router.get("", response_model=ProductAdminListOut, summary="Список товаров (включая скрытые)")
 async def list_products(
-    search: str | None = Query(None, max_length=100, description="поиск по названию или артикулу"),
-    category: str | None = Query(None, description="slug категории"),
-    is_active: bool | None = Query(None, description="true: только видимые, false: только скрытые"),
-    page: int = Query(1, ge=1),
-    page_size: int = Query(20, ge=1, le=100),
-    db: AsyncSession = Depends(get_db),
+        search: str | None = Query(None, max_length=100, description="поиск по названию или артикулу"),
+        category: str | None = Query(None, description="slug категории"),
+        is_active: bool | None = Query(None, description="true: только видимые, false: только скрытые"),
+        page: int = Query(1, ge=1),
+        page_size: int = Query(20, ge=1, le=100),
+        db: AsyncSession = Depends(get_db),
 ):
     stmt = select(Product)
 
@@ -91,7 +73,7 @@ async def list_products(
 
 @router.get("/{product_id}", response_model=ProductAdminOut, summary="Товар для редактирования")
 async def get_product(product_id: int, db: AsyncSession = Depends(get_db)):
-    return await _get_or_404(db, product_id)
+    return await get_or_404(db, Product, product_id, message="Товар не найден")
 
 
 @router.post("", response_model=ProductAdminOut, status_code=201, summary="Создать товар")
@@ -100,29 +82,29 @@ async def create_product(data: ProductIn, db: AsyncSession = Depends(get_db)):
 
     product = Product(**data.model_dump())
     db.add(product)
-    await _commit(db)
+    await commit_or_409(db, message="Товар с таким артикулом уже существует")  # страховка от гонки по артикулу
     await db.refresh(product)  # подтягиваем значения, которые проставила БД (created_at)
     return product
 
 
 @router.put("/{product_id}", response_model=ProductAdminOut, summary="Обновить товар целиком")
 async def update_product(product_id: int, data: ProductIn, db: AsyncSession = Depends(get_db)):
-    product = await _get_or_404(db, product_id)
+    product = await get_or_404(db, Product, product_id, message="Товар не найден")
     await _validate_refs(db, data, product_id=product_id)
 
     for field, value in data.model_dump().items():
         setattr(product, field, value)
 
-    await _commit(db)
+    await commit_or_409(db, message="Товар с таким артикулом уже существует")
     return product
 
 
 @router.patch("/{product_id}/active", response_model=ProductAdminOut, summary="Скрыть или показать товар")
 async def set_product_active(product_id: int, data: ActiveUpdate, db: AsyncSession = Depends(get_db)):
     # Изменение is_active работает как мягкое удаление
-    product = await _get_or_404(db, product_id)
+    product = await get_or_404(db, Product, product_id, message="Товар не найден")
     product.is_active = data.is_active
-    await _commit(db)
+    await commit_or_409(db, message="Товар с таким артикулом уже существует")
     return product
 
 
