@@ -1,7 +1,7 @@
 from datetime import datetime
 from enum import Enum
 
-from sqlalchemy import Column, Integer, ForeignKey, Enum as SQLEnum, DECIMAL, Text, Boolean, DateTime, func
+from sqlalchemy import Column, Integer, ForeignKey, Enum as SQLEnum, DECIMAL, Text, Boolean, DateTime, func, String
 from sqlalchemy.orm import relationship
 
 from app.database import Base
@@ -24,7 +24,10 @@ class Order(Base):
                                  native_enum=False), nullable=False, default=OrderStatus.PENDING)
 
     total_amount: float = Column(DECIMAL(precision=10, scale=2), nullable=False)
+
+    contact_phone: str | None = Column(String(20), nullable=True)
     shipping_address: str = Column(Text, nullable=True)
+
     receipt_sent: bool = Column(Boolean, nullable=False, default=False)
 
     created_at: datetime = Column(DateTime, nullable=False, server_default=func.now())

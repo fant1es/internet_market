@@ -2,7 +2,8 @@ from datetime import datetime
 from decimal import Decimal
 from enum import Enum
 
-from sqlalchemy import Column, Integer, String, Enum as SQLEnum, Boolean, DateTime, func, DECIMAL, CheckConstraint, text
+from sqlalchemy import Column, Integer, String, Enum as SQLEnum, Boolean, DateTime, func, DECIMAL, CheckConstraint, \
+    text, Text
 
 from app.database import Base
 
@@ -26,6 +27,9 @@ class User(Base):
     role: UserRole = Column(SQLEnum(UserRole,
                                     values_callable=lambda obj: [e.value for e in obj], # Храним как строку
                                     native_enum=False), nullable=False, default=UserRole.USER)
+
+    phone: str | None = Column(String(20), nullable=True)
+    default_address: str | None = Column(Text, nullable=True)
 
     is_active: bool = Column(Boolean, nullable=False, default=True)
     created_at: datetime = Column(DateTime, nullable=False, server_default=func.now())
