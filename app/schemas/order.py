@@ -4,12 +4,14 @@ from decimal import Decimal
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.models.order import OrderStatus
+from app.schemas.types import Phone
 
 
 class CheckoutIn(BaseModel):
     """Схема с заполняемой пользователем формой"""
     model_config = ConfigDict(str_strip_whitespace=True)
     shipping_address: str = Field(min_length=5, max_length=500)
+    contact_phone: Phone
 
 
 class OrderItemOut(BaseModel):
