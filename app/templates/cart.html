@@ -30,9 +30,18 @@
             </div>
           </div>
 
+          <div class="mb-3">
+            <label class="form-label" for="co-phone">Телефон для связи</label>
+            <input type="tel" class="form-control" id="co-phone" name="contact_phone"
+                   inputmode="tel" autocomplete="tel" maxlength="20" required
+                   pattern="[0-9+\s\-\(\)]{10,20}" placeholder="+375 29 123-45-67"
+                   value="{{ user.phone or '' }}">
+            <div class="invalid-feedback">Укажите корректный номер телефона</div>
+          </div>
+
           <label class="form-label" for="co-address">Адрес доставки</label>
           <textarea class="form-control" id="co-address" name="shipping_address"
-                    rows="3" minlength="5" maxlength="500" required></textarea>
+                    rows="3" minlength="5" maxlength="500" required>{{ user.default_address or '' }}</textarea>
           <div class="invalid-feedback">Укажите адрес (не короче 5 символов)</div>
         </div>
         <div class="modal-footer">
