@@ -13,7 +13,7 @@ router = APIRouter(prefix="/orders", tags=["orders"])
 async def checkout(data: CheckoutIn,
                    db: AsyncSession = Depends(get_db),
                    user=Depends(get_current_user)):
-    order_id = await order_service.create_order(db, user.id, data.shipping_address)
+    order_id = await order_service.create_order(db, user.id, data.shipping_address, data.contact_phone)
     return await order_service.get_order(db, order_id)
 
 

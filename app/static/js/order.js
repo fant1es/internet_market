@@ -4,6 +4,8 @@ if (checkoutForm) {
     const modalEl = document.getElementById("checkout-modal");
     const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
     const submitBtn = checkoutForm.querySelector('[type="submit"]');
+    const phoneInput = checkoutForm.contact_phone;
+    phoneInput.addEventListener("input", () => phoneInput.classList.remove("is-invalid"));
 
     // При открытии модалки показываем актуальный состав заказа
     modalEl.addEventListener("show.bs.modal", () => {
@@ -26,6 +28,7 @@ if (checkoutForm) {
     modalEl.addEventListener("hidden.bs.modal", () => {
         checkoutForm.reset();
         checkoutForm.classList.remove("was-validated");
+        phoneInput.classList.remove("is-invalid");
     });
 
     checkoutForm.addEventListener("submit", async (e) => {
@@ -35,7 +38,10 @@ if (checkoutForm) {
             return;
         }
 
-        const body = { shipping_address: checkoutForm.shipping_address.value.trim() };
+        const body = {
+            shipping_address: checkoutForm.shipping_address.value.trim(),
+            contact_phone: phoneInput.value.trim()
+        };
 
         submitBtn.disabled = true; // защита от двойной отправки
         try {
@@ -44,8 +50,14 @@ if (checkoutForm) {
             location.href = "/my-orders";
         }
         catch (err) {
-            modal.hide();
             const detail = err.data?.detail;
+            if (err.status === 422 && Array.isArray(detail)
+                && detail.some((d) => d.loc?.includes("contact_phone"))){
+                phoneInput.classList.add("is-invalid");
+                phoneInput.focus();
+                return;
+            }
+            modal.hide();
             if (err.status === 409 && detail?.code === "cart_unavailable") {
                 // Подсвечиваем проблемные строки корзины
                 cartProblems.clear();

@@ -14,6 +14,13 @@ function formatDate(iso) {
         .toLocaleString("ru-RU", { dateStyle: "short", timeStyle: "short" });
 }
 
+function formatPhone(p) {
+    if (!p) return "-";
+    const m = /^\+375(\d{2})(\d{3})(\d{2})(\d{2})$/.exec(p);
+    return m ? `+375 (${m[1]}) ${m[2]}-${m[3]}-${m[4]}` : p;
+}
+
+
 // Кнопки зависят от статуса: оплатить можно только pending, отменить pending и paid
 function actionsHtml(order) {
     const pay = `<button class="btn btn-success btn-sm order-pay" data-id="${order.id}">Оплатить</button>`;
@@ -43,6 +50,7 @@ function renderOrder(order) {
       <div class="card-body">
         <ul class="list-unstyled mb-3">${items}</ul>
         <div class="text-muted small">Адрес доставки: ${escapeHtml(order.shipping_address ?? "-")}</div>
+        <div class="text-muted small">Телефон: ${formatPhone(order.contact_phone)}</div>
       </div>
       <div class="card-footer d-flex justify-content-between align-items-center">
         <div class="order-actions d-flex gap-2">${actionsHtml(order)}</div>

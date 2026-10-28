@@ -30,5 +30,6 @@ class OrderOut(BaseModel):
     status: OrderStatus
     total_amount: Decimal
     shipping_address: str | None
+    contact_phone: str | None
     created_at: datetime
     items: list[OrderItemOut]

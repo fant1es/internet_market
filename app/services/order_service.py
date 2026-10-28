@@ -13,7 +13,8 @@ from app.services.balance_service import apply_balance_change
 from app.utils.database import run_in_transaction
 
 
-async def _create(db: AsyncSession, user_id: int, shipping_address: str) -> int:
+async def _create(db: AsyncSession, user_id: int, shipping_address: str,
+                  contact_phone: str) -> int:
     # Блокируем корзину с помощью with_for_update() для защиты от двух одновременных запросов
     cart = await db.scalar(select(Cart).where(Cart.user_id == user_id).with_for_update())
     if cart is None:
@@ -66,7 +67,8 @@ async def _create(db: AsyncSession, user_id: int, shipping_address: str) -> int:
 
     # Создание заказа
     total = sum((products[i.product_id].price * i.quantity for i in items), Decimal("0"))
-    order = Order(user_id=user_id, total_amount=total, shipping_address=shipping_address)
+    order = Order(user_id=user_id, total_amount=total,
+                  shipping_address=shipping_address, contact_phone=contact_phone)
     db.add(order)
     await db.flush()
 
@@ -133,8 +135,8 @@ async def _cancel(db: AsyncSession, order_id: int, user_id: int) -> int:
     return order_id
 
 
-async def create_order(db: AsyncSession, user_id: int, shipping_address: str) -> int:
-    return await run_in_transaction(db, _create, user_id, shipping_address)
+async def create_order(db: AsyncSession, user_id: int, shipping_address: str, contact_phone: str) -> int:
+    return await run_in_transaction(db, _create, user_id, shipping_address, contact_phone)
 
 
 async def pay_order(db: AsyncSession, order_id: int, user_id: int) -> int:
