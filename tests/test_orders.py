@@ -1,13 +1,13 @@
 import asyncio
 from decimal import Decimal
 
+import pytest
 from sqlalchemy import func, select, update
 
-from app.models import BalanceTransaction, Order, Product, User
+from app.models import BalanceTransaction, Order, Product
 from app.models.balance_transaction import TransactionType
 
-ADDRESS = {"shipping_address": "Минск, ул. Тестовая, 1"}
-
+CHECKOUT = {"shipping_address": "Минск, ул. Тестовая, 1", "contact_phone": "+375291234567"}
 
 # region --- Хелперы ----------------------------------------------------------------
 async def add_to_cart(client, product, quantity: int = 1):
@@ -16,7 +16,7 @@ async def add_to_cart(client, product, quantity: int = 1):
 
 
 async def checkout(client):
-    return await client.post("/orders", json=ADDRESS)
+    return await client.post("/orders", json=CHECKOUT)
 
 
 async def place_order(client, product, quantity: int = 1) -> dict:
@@ -56,7 +56,7 @@ async def transactions_of(db_session, order_id: int) -> list[tuple]:
 
 # region --- Оформление: успех ------------------------------------------------------
 async def test_checkout_requires_auth(client):
-    response = await client.post("/orders", json=ADDRESS)
+    response = await client.post("/orders", json=CHECKOUT)
 
     assert response.status_code == 401
 
@@ -73,7 +73,8 @@ async def test_checkout_success(user_client, db_session, make_product):
     assert response.status_code == 201
     order = response.json()
     assert order["status"] == "pending"
-    assert order["shipping_address"] == ADDRESS["shipping_address"]
+    assert order["shipping_address"] == CHECKOUT["shipping_address"]
+    assert order["contact_phone"] == CHECKOUT["contact_phone"]
     assert Decimal(order["total_amount"]) == Decimal("351.50")
     assert {(i["product_id"], i["quantity"]) for i in order["items"]} == {(mouse.id, 2), (keyboard.id, 3)}
 
@@ -98,6 +99,7 @@ async def test_order_keeps_price_snapshot(user_client, db_session, make_product)
     orders = (await user_client.get("/orders")).json()
     item = orders[0]["items"][0]
     assert orders[0]["id"] == order["id"]
+    assert orders[0]["contact_phone"] == CHECKOUT["contact_phone"]
     assert item["product_name"] == "Старое имя"
     assert Decimal(item["product_price"]) == Decimal("100.00")
     assert Decimal(orders[0]["total_amount"]) == Decimal("200.00")
@@ -115,7 +117,7 @@ async def test_checkout_empty_cart(user_client, db_session):
 async def test_checkout_invalid_address(user_client, make_product):
     await add_to_cart(user_client, await make_product())
 
-    response = await user_client.post("/orders", json={"shipping_address": "abc"})
+    response = await user_client.post("/orders", json={**CHECKOUT, "shipping_address": "abc"})
 
     assert response.status_code == 422
 
@@ -376,4 +378,27 @@ async def test_topup_validation(user_client):
     assert (await user_client.post("/balance/topup", json={"amount": "-5"})).status_code == 422
     assert (await user_client.post("/balance/topup", json={"amount": "100001"})).status_code == 422
     assert await balance_of(user_client) == Decimal("0.00")
+# endregion
+
+# region --- Номер телефона ---------------------------------------------------------
+async def test_checkout_normalizes_phone(user_client, make_product):
+    await add_to_cart(user_client, await make_product())
+    response = await user_client.post("/orders", json={**CHECKOUT, "contact_phone": "8 (029) 123-45-67"})
+
+    assert response.status_code == 201
+    assert response.json()["contact_phone"] == "+375291234567"
+
+@pytest.mark.parametrize("phone", ["13212", "", "291234567", "+0291234567", "abc"])
+async def test_checkout_invalid_phone(user_client, db_session, make_product, phone):
+    await add_to_cart(user_client, await make_product())
+    response = await user_client.post("/orders", json={**CHECKOUT, "contact_phone": phone})
+
+    assert response.status_code == 422
+    assert await count_orders(db_session) == 0
+
+async def test_checkout_phone_required(user_client, db_session, make_product):
+    await add_to_cart(user_client, await make_product())
+    response = await user_client.post("/orders", json={"shipping_address": CHECKOUT["shipping_address"]})
+
+    assert response.status_code == 422
 # endregion
