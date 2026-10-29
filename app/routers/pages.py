@@ -96,3 +96,10 @@ async def my_orders_page(request: Request, user: CurrentUserOptional):
     if not user:
         return RedirectResponse("/login")
     return templates.TemplateResponse("orders.html", {"request": request, "user": user})
+
+
+@router.get("/account")
+async def account_page(request: Request, user: CurrentUserOptional):
+    if not user:
+        return RedirectResponse("/login")
+    return templates.TemplateResponse("account.html", {"request": request, "user": user})

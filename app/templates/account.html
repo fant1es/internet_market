@@ -1,10 +1,63 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
-</head>
-<body>
-$END$
-</body>
-</html>
+{% extends "base.html" %}
+
+{% block title %}Личный кабинет{% endblock %}
+
+{% block content %}
+  <h1 class="mb-4">Личный кабинет</h1>
+
+  <div class="row g-4">
+    <div class="col-lg-5">
+      <div class="card">
+        <div class="card-header fw-semibold">Профиль</div>
+        <form class="card-body" id="profile-form" novalidate>
+          <fieldset id="pf-fields" disabled>
+            <div class="mb-3">
+              <label class="form-label" for="pf-name">Имя</label>
+              <input class="form-control" id="pf-name" name="name" value="{{ user.name }}"
+                     minlength="2" maxlength="100" required>
+              <div class="invalid-feedback">Укажите имя (только буквы, пробелы и дефис)</div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label" for="pf-email">Email</label>
+              <input class="form-control" id="pf-email" value="{{ user.email }}" disabled>
+              <div class="form-text">Смена почты появится позже</div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label" for="pf-phone">Телефон</label>
+              <input type="tel" class="form-control" id="pf-phone" name="phone"
+                     inputmode="tel" autocomplete="tel" maxlength="25"
+                     pattern="[0-9+\s\-\(\)]{9,25}" placeholder="Не указан"
+                     value="{{ user.phone or '' }}">
+              <div class="invalid-feedback">Укажите номер в международном формате</div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label" for="pf-address">Адрес по умолчанию</label>
+              <textarea class="form-control" id="pf-address" name="default_address"
+                        rows="3" minlength="5" maxlength="500" placeholder="Не указан">{{ user.default_address or '' }}</textarea>
+              <div class="invalid-feedback">Адрес не короче 5 символов</div>
+            </div>
+          </fieldset>
+
+          <div id="pf-view-actions">
+            <button type="button" class="btn btn-outline-primary" id="pf-edit">Изменить профиль</button>
+          </div>
+          <div id="pf-edit-actions" hidden>
+            <button type="submit" class="btn btn-primary me-2">Сохранить</button>
+            <button type="button" class="btn btn-outline-secondary" id="pf-cancel">Отмена</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="col-lg-7">
+      <!-- шаг 3: заказы -->
+    </div>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  <script src="/static/js/account.js"></script>
+{% endblock %}
