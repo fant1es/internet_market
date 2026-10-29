@@ -4,6 +4,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import Cart, User
+from app.schemas.auth import UserUpdate
 from app.utils.database import run_in_transaction
 from app.utils.security import hash_password, verify_password
 
@@ -36,3 +37,16 @@ async def authenticate(db: AsyncSession, email: str, password: str) -> User:
     if user is None or not verify_password(password, user.password_hash):
         raise HTTPException(status_code=401, detail="Неверный пароль или почта")
     return user
+
+
+async def _update_user(db: AsyncSession, user: User, data: UserUpdate) -> User:
+    # exclude_unset=True дает менять только то, что прислал пользователь
+    for field, value in data.model_dump(exclude_unset=True).items():
+        setattr(user, field, value)
+    return user
+
+
+async def update_user(db: AsyncSession, user: User, data: UserUpdate) -> User:
+    updated_user = await run_in_transaction(db, _update_user, user, data)
+    await db.refresh(updated_user)
+    return updated_user
