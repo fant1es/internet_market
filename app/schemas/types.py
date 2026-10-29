@@ -9,7 +9,7 @@ _NAME_RE = re.compile(r"^[a-zA-Zа-яА-ЯёЁ\- ]+$")
 
 def _validate_name(v: str) -> str:
     # Проверка any, чтобы не проходили имена типа "---", "- -"
-    if not _NAME_RE.fullmatch(v) or not any(c.isalpha for c in v):
+    if not _NAME_RE.fullmatch(v) or not any(c.isalpha() for c in v):
         raise ValueError("Имя должно содержать только буквы и пробелы")
     return v
 
