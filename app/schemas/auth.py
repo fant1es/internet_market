@@ -6,7 +6,6 @@ from pydantic import BaseModel, EmailStr, ConfigDict, field_validator
 from app.schemas.types import Name
 
 
-# region Схемы данных, получаемых от пользователя
 class RegisterSchema(BaseModel):
     email: EmailStr
     password: str
@@ -23,14 +22,13 @@ class LoginSchema(BaseModel):
     email: EmailStr
     password: str
 
-# endregion
 
-# region Схемы данных, отдаваемых пользователю
 class UserOut(BaseModel):
     id: int
     email: EmailStr
     name: str
     role: str
     balance: Decimal
+    phone: str | None
+    default_address: str | None
     model_config = ConfigDict(from_attributes=True)
-# endregion
