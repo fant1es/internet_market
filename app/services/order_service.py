@@ -157,10 +157,16 @@ async def get_order(db: AsyncSession, order_id: int) -> Any:
 
 
 # noinspection PyTypeChecker
-async def list_orders(db: AsyncSession, user_id: int) -> list[Order]:
-    return (await db.scalars(
-        select(Order).where(Order.user_id == user_id)
-        .options(selectinload(Order.items))
-        .order_by(Order.id.desc())
-        .execution_options(populate_existing=True)
-    )).all()
+async def list_orders(db: AsyncSession, user_id: int,
+                      statuses: list[OrderStatus] | None = None,
+                      limit: int | None = None) -> list[Order]:
+    query = select(Order).where(Order.user_id == user_id)
+    if statuses:
+        query = query.where(Order.status.in_(statuses))
+    query = (query.options(selectinload(Order.items))
+            .order_by(Order.id.desc())
+            .execution_options(populate_existing=True))
+    if limit:
+        query = query.limit(limit)
+
+    return (await db.scalars(query)).all()

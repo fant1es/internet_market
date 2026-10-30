@@ -1,8 +1,11 @@
-from fastapi import APIRouter, Depends
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.dependencies.auth import get_current_user
+from app.models.order import OrderStatus
 from app.schemas.order import CheckoutIn, OrderOut
 from app.services import order_service
 
@@ -18,9 +21,12 @@ async def checkout(data: CheckoutIn,
 
 
 @router.get("", response_model=list[OrderOut], summary="История заказов")
-async def my_orders(db: AsyncSession = Depends(get_db),
-                    user=Depends(get_current_user)):
-    return await order_service.list_orders(db, user.id)
+async def my_orders(
+        status: Annotated[list[OrderStatus] | None, Query(description="Фильтр по статусам")] = None,
+        limit: Annotated[int | None, Query(description="Максимум отображаемых заказов")] = None,
+        db: AsyncSession = Depends(get_db),
+        user=Depends(get_current_user)):
+    return await order_service.list_orders(db, user.id, status, limit)
 
 
 @router.post("/{order_id}/pay", response_model=OrderOut, summary="Оплатить заказ с баланса")
