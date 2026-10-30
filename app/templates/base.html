@@ -20,7 +20,7 @@
           data-bs-toggle="modal" data-bs-target="#topup-modal">
           Баланс: <span id="balance-amount" data-balance="{{ user.balance }}"></span>
       </button>
-      <span>Привет, {{ user.name }}</span>
+    <span>Привет, <a href="/account" id="nav-user-name" class="text-decoration-none">{{ user.name }}</a></span>
       <button id="logout-btn" class="btn btn-outline-secondary btn-sm">Выйти</button>
     {% else %}
       <a href="/login" class="btn btn-primary btn-sm">Войти</a>
