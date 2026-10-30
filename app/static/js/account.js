@@ -92,4 +92,41 @@ if (profileForm) {
             submitBtn.disabled = false;
         }
     });
+
+    const pendingBlock = document.getElementById("pending-block");
+    const pendingRoot = document.getElementById("pending-root");
+    const recentRoot = document.getElementById("recent-root");
+
+    async function loadAccountOrders() {
+        try {
+            const [pending, recent] = await Promise.all([
+                api("/orders?status=pending"),
+                // Всё, кроме ожидающих оплаты: они уже показаны выше и не должны дублироваться
+                api("/orders?limit=3&status=paid&status=completed&status=cancelled"),
+            ]);
+
+            pendingBlock.hidden = pending.length === 0;
+            document.getElementById("pending-count").textContent = pending.length;
+            pendingRoot.innerHTML = pending.map(renderOrder).join("");
+
+            recentRoot.innerHTML = recent.length
+                ? recent.map(renderOrderRow).join("")
+                : `<div class="list-group-item text-muted">Других заказов пока нет</div>`;
+        }
+        catch (err) {
+            showAlert(errorText(err));
+        }
+    }
+
+    if (pendingRoot && recentRoot) {
+        loadAccountOrders();
+
+        // Возврат из bfcache: статусы могли измениться
+        window.addEventListener("pageshow", (e) => {
+            if (e.persisted) loadAccountOrders();
+        });
+
+        // Кнопки есть только в блоке «Ждут оплаты». После оплаты или отмены заказ уезжает в «Последние»
+        bindOrderActions(pendingRoot, loadAccountOrders);
+    }
 }
