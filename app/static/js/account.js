@@ -27,21 +27,6 @@ if (profileForm) {
         profileForm.classList.remove("was-validated");
     }
 
-    function showFieldErrors(detail){
-        let found = false;
-        for (const d of detail){
-            const input = el[d.loc?.[d.loc.length - 1]];
-            if (!input || !KEYS.includes(input.name)) continue;
-
-            input.classList.add("is-invalid");
-            // Убираем префикс от pydantic "Value error"
-            input.parentElement.querySelector(".invalid-feedback").textContent =
-                d.msg.replace(/^Value error, /, "");
-            found = true;
-        }
-        return found;
-    }
-
     document.getElementById("pf-edit").addEventListener("click", () => setEditing(true));
     document.getElementById("pf-cancel").addEventListener("click", () => {
         restore();
@@ -85,7 +70,7 @@ if (profileForm) {
         }
         catch (err) {
             const detail = err.data?.detail;
-            if (err.status === 422 && Array.isArray(detail) && showFieldErrors(detail)) return;
+            if (err.status === 422 && Array.isArray(detail) && showFieldErrors(profileForm, detail, KEYS)) return;
             showAlert(errorText(err));
         }
         finally {

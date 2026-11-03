@@ -90,3 +90,30 @@ function renderPagination(container, page, pages) {
 function productImageUrl(product) {
     return product.image_path ? `/static/${product.image_path}` : null;
 }
+
+// Подсвечивает поле и пишет текст ошибки в соседний .invalid-feedback
+function setFieldError(input, message) {
+    input.classList.add("is-invalid");
+    const feedback = input.parentElement.querySelector(".invalid-feedback");
+    if (feedback) feedback.textContent = message;
+}
+
+function clearFieldErrors(form) {
+    form.querySelectorAll(".is-invalid").forEach((i) => i.classList.remove("is-invalid"));
+    form.classList.remove("was-validated");
+}
+
+// Привязывает ошибки 422 к полям формы. Возвращает true, если хоть одна нашла своё поле
+function showFieldErrors(form, detail, keys) {
+    let found = false;
+    for (const d of detail) {
+        const name = d.loc?.[d.loc.length - 1];
+        const input = form.elements.namedItem(String(name));
+        if (!input || !keys.includes(input.name)) continue;
+
+        // Убираем префикс от pydantic "Value error, "
+        setFieldError(input, d.msg.replace(/^Value error, /, ""));
+        found = true;
+    }
+    return found;
+}
