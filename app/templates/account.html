@@ -50,6 +50,46 @@
           </div>
         </form>
       </div>
+
+      <div class="card mt-4">
+        <div class="card-header fw-semibold">Безопасность</div>
+        <div class="card-body">
+          <div id="pw-view-actions">
+            <button type="button" class="btn btn-outline-primary" id="pw-open">Сменить пароль</button>
+          </div>
+
+          <form id="password-form" novalidate hidden>
+            <!-- Поле для менеджеров паролей: чтобы они знали, к какому аккаунту относится пароль -->
+            <input type="email" class="visually-hidden" autocomplete="username"
+                   value="{{ user.email }}" tabindex="-1" aria-hidden="true" readonly>
+
+            <div class="mb-3">
+              <label class="form-label" for="pw-current">Текущий пароль</label>
+              <input type="password" class="form-control" id="pw-current" name="current_password"
+                     autocomplete="current-password" maxlength="128">
+              <div class="invalid-feedback"></div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label" for="pw-new">Новый пароль</label>
+              <input type="password" class="form-control" id="pw-new" name="new_password"
+                     autocomplete="new-password" maxlength="128">
+              <div class="invalid-feedback"></div>
+              <div class="form-text">От 8 до 128 символов</div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label" for="pw-confirm">Повторите новый пароль</label>
+              <input type="password" class="form-control" id="pw-confirm" name="confirm_password"
+                     autocomplete="new-password" maxlength="128">
+              <div class="invalid-feedback"></div>
+            </div>
+
+            <button type="submit" class="btn btn-primary me-2">Сохранить</button>
+            <button type="button" class="btn btn-outline-secondary" id="pw-cancel">Отмена</button>
+          </form>
+        </div>
+      </div>
     </div>
 
     <div class="col-lg-7">
@@ -72,4 +112,5 @@
 {% block scripts %}
   <script src="/static/js/orders-ui.js"></script>
   <script src="/static/js/account.js"></script>
+  <script src="/static/js/security.js"></script>
 {% endblock %}
