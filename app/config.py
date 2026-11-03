@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     admin_email: str | None = None
     admin_password: str | None = None
 
+    cookie_secure: bool = False # При True передача только через HTTPS
+
     # Без extra=ignore строго требует все поля из файла окружения
     model_config = SettingsConfigDict(env_file='.env')
 

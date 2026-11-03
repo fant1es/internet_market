@@ -6,9 +6,10 @@ from jose import jwt, ExpiredSignatureError, JWTError
 from app.config import settings
 
 
-def create_access_token(user_id: int) -> str:
+def create_access_token(user_id: int, user_token_version: int) -> str:
     payload = {
         "sub": str(user_id),
+        "tv": str(user_token_version),
         "exp": datetime.now(timezone.utc) + timedelta(minutes=settings.access_token_expire_minutes),
     }
     return jwt.encode(payload, settings.secret_key, algorithm=settings.algorithm)

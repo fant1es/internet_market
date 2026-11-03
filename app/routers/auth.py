@@ -8,7 +8,7 @@ from app.database import get_db
 from app.dependencies.auth import CurrentUser
 from app.schemas.auth import LoginSchema, RegisterSchema, UserOut
 from app.services import user_service
-from app.utils.jwt import create_access_token
+from app.utils.auth_cookie import set_auth_cookie
 
 auth_router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -21,7 +21,7 @@ async def register(data: RegisterSchema, db: Annotated[AsyncSession, Depends(get
 @auth_router.post("/login", response_model=UserOut)
 async def login(data: LoginSchema, db: Annotated[AsyncSession, Depends(get_db)], response: Response):
     user = await user_service.authenticate(db, data.email, data.password)
-    response.set_cookie(key="access_token", value=create_access_token(user.id), httponly=True)
+    set_auth_cookie(response, user)
     return user
 
 
