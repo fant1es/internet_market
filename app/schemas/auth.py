@@ -15,6 +15,13 @@ class LoginSchema(BaseModel):
     password: str
 
 
+class ChangePasswordSchema(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    current_password: str # Он проверяется по хэшу, лишняя проверка не нужна
+    new_password: Password  # Он новый, ему требуется проверка
+
+
 class UserOut(BaseModel):
     id: int
     email: EmailStr
