@@ -11,6 +11,18 @@ _MOBILE_TYPES = {PhoneNumberType.MOBILE, PhoneNumberType.FIXED_LINE_OR_MOBILE}
 _PHONE_HINT = "Неверно указан номер. Пример номера: +375 29 123-45-67"
 _NAME_RE = re.compile(r"^(?=.*[^\W\s\d_])[A-Za-z\s]+$")
 
+_PASSWORD_MIN_LEN = 8
+_PASSWORD_MAX_LEN = 128
+
+def _validate_password(v: str) -> str:
+    if len(v) < _PASSWORD_MIN_LEN:
+        raise ValueError(f"Пароль должен быть не короче {_PASSWORD_MIN_LEN} символов")
+    if len(v) > _PASSWORD_MAX_LEN:
+        raise ValueError(f"Пароль должен быть не длиннее {_PASSWORD_MAX_LEN} символов")
+    if not v.isprintable():
+        raise ValueError("Пароль содержит недопустимые символы")
+    return v
+
 
 def normalize_phone(value: str) -> str:
     """Любой валидный мобильный номер приводится к стандарту E.164, например '8 (029) 123-45-67' -> '+375291234567'."""
@@ -38,4 +50,5 @@ Name = Annotated[str,
     StringConstraints(strip_whitespace=True, min_length=2, max_length=100),
     AfterValidator(_validate_name)
 ]
+Password = Annotated[str, AfterValidator(_validate_password)]
 Phone = Annotated[str, AfterValidator(normalize_phone)]

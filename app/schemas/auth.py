@@ -1,22 +1,14 @@
-import re
 from decimal import Decimal
 
 from pydantic import BaseModel, EmailStr, ConfigDict, field_validator, Field
 
-from app.schemas.types import Name, Phone
+from app.schemas.types import Name, Phone, Password
 
 
 class RegisterSchema(BaseModel):
     email: EmailStr
-    password: str
+    password: Password
     name: Name
-
-    @field_validator("password")
-    @classmethod
-    def validate_password_length(cls, v: str) -> str:
-        if not re.match(r"^[0-9a-zA-Z_+-]{6,20}$", v):
-            raise ValueError("Пароль должен быть длиной 6-20 символов, использовать только буквы, цифры, _+- only")
-        return v
 
 class LoginSchema(BaseModel):
     email: EmailStr
