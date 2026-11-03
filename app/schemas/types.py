@@ -9,7 +9,7 @@ DEFAULT_REGION = "BY"  # Для номеров без кода страны:
 _ALLOWED_CHARS = re.compile(r"^[\d\s\-().+]+$")
 _MOBILE_TYPES = {PhoneNumberType.MOBILE, PhoneNumberType.FIXED_LINE_OR_MOBILE}
 _PHONE_HINT = "Неверно указан номер. Пример номера: +375 29 123-45-67"
-_NAME_RE = re.compile(r"^(?=.*[^\W\s\d_])[A-Za-z0-9\s]+$")
+_NAME_RE = re.compile(r"^(?=.*[^\W\s\d_])[A-Za-z\s]+$")
 
 
 def normalize_phone(value: str) -> str:
