@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models import Cart, User
 from app.schemas.auth import UserUpdate
 from app.utils.database import run_in_transaction
+from app.utils.errors import field_error
 from app.utils.security import hash_password, verify_password
 
 
@@ -50,3 +51,15 @@ async def update_user(db: AsyncSession, user: User, data: UserUpdate) -> User:
     updated_user = await run_in_transaction(db, _update_user, user, data)
     await db.refresh(updated_user)
     return updated_user
+
+
+async def change_password(db: AsyncSession, user: User, current_password: str, new_password: str) -> None:
+    if not verify_password(current_password, user.password_hash):
+        raise field_error("current_password", "Неверный текущий пароль")
+    if current_password == new_password:
+        raise field_error("new_password", "Новый пароль должен отличаться от текущего")
+
+    user.password_hash = hash_password(new_password)
+    user.token_version = User.token_version + 1   # инкремент на стороне БД
+    await db.commit()
+    await db.refresh(user)   # получаем актуальный token_version для новой cookie
