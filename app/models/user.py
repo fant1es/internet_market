@@ -34,6 +34,9 @@ class User(Base):
     is_active: bool = Column(Boolean, nullable=False, default=True)
     created_at: datetime = Column(DateTime, nullable=False, server_default=func.now())
 
+    # При обновлении пароля меняем версию токена 
+    token_version = Column(Integer, nullable=False, default=0, server_default=text("0"))
+
     __table_args__ = (
         CheckConstraint("balance >= 0", name="ck_users_balance_nonneg"),
     )
