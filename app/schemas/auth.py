@@ -1,7 +1,7 @@
 from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, field_validator, Field
-from pydantic.v1 import EmailStr
+from pydantic import EmailStr
 
 from app.schemas.types import Name, Phone, Password, Email
 
