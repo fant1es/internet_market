@@ -25,6 +25,8 @@ class Settings(BaseSettings):
     smtp_from: str = "Магазин <no-reply@shop.local>"
     app_base_url: str = "http://localhost:8000"
 
+    email_token_ttl_minutes: int = 30
+
     # Без extra=ignore строго требует все поля из файла окружения
     model_config = SettingsConfigDict(env_file='.env')
 
