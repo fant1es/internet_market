@@ -3,7 +3,7 @@ from typing import Annotated
 
 import phonenumbers
 from phonenumbers import NumberParseException, PhoneNumberFormat, PhoneNumberType
-from pydantic import AfterValidator, StringConstraints
+from pydantic import AfterValidator, StringConstraints, EmailStr
 
 DEFAULT_REGION = "BY"  # Для номеров без кода страны:
 _ALLOWED_CHARS = re.compile(r"^[\d\s\-().+]+$")
@@ -52,3 +52,4 @@ Name = Annotated[str,
 ]
 Password = Annotated[str, AfterValidator(_validate_password)]
 Phone = Annotated[str, AfterValidator(normalize_phone)]
+Email = Annotated[EmailStr, AfterValidator(lambda v: v.lower()), ]

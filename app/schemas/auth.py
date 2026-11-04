@@ -1,17 +1,18 @@
 from decimal import Decimal
 
-from pydantic import BaseModel, EmailStr, ConfigDict, field_validator, Field
+from pydantic import BaseModel, ConfigDict, field_validator, Field
+from pydantic.v1 import EmailStr
 
-from app.schemas.types import Name, Phone, Password
+from app.schemas.types import Name, Phone, Password, Email
 
 
 class RegisterSchema(BaseModel):
-    email: EmailStr
+    email: Email
     password: Password
     name: Name
 
 class LoginSchema(BaseModel):
-    email: EmailStr
+    email: Email
     password: str
 
 
@@ -20,6 +21,12 @@ class ChangePasswordSchema(BaseModel):
 
     current_password: str # Он проверяется по хэшу, лишняя проверка не нужна
     new_password: Password  # Он новый, ему требуется проверка
+
+class ChangeEmailSchema(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    current_password: str
+    new_email: Email
 
 
 class UserOut(BaseModel):
