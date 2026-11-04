@@ -21,5 +21,10 @@ services:
     volumes:
       - .:/app
 
+  mailpit:
+    image: axllent/mailpit
+    ports:
+      - "8025:8025"
+
 volumes:
   postgres_data:
