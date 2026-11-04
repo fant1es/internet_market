@@ -19,7 +19,7 @@ def create_change_email_token(user_id: int, new_email: str, token_version: int) 
     )
 
 
-def read_change_email_token(token: str, max_age: int) -> dict:
+def read_change_email_token(token: str, max_age: int | None = None) -> dict:
     ttl = settings.email_token_ttl_minutes * 60 if max_age is None else max_age
     try:
         data = _serializer(_CHANGE_MAIL_SALT).loads(token, max_age=ttl)
