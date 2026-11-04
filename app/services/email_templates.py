@@ -23,10 +23,11 @@ class EmailContent:
     html: str
 
 
-def _render(name: str, **ctx) -> tuple[str, str]:
-    """Обрабатывает пару name.txt + name.html с общими переменными."""
+def _render(template: str, /, **ctx) -> tuple[str, str]:
+    """Рендерит пару template.txt + template.html с общими переменными."""
     ctx = {"shop_name": SHOP_NAME, "ttl_minutes": settings.email_token_ttl_minutes, **ctx}
-    return _env.get_template(f"{name}.txt").render(**ctx), _env.get_template(f"{name}.html").render(**ctx)
+    return (_env.get_template(f"{template}.txt").render(**ctx),
+            _env.get_template(f"{template}.html").render(**ctx))
 
 
 def mask_email(email: str) -> str:
