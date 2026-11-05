@@ -83,7 +83,7 @@ async def request_email_change(db: AsyncSession, user: User, current_password: s
     return f"{settings.app_base_url}/confirm-email?token={token}"
 
 
-async def _confirm_email_change(db: AsyncSession, data: dict) -> type[User]:
+async def _confirm_email_change(db: AsyncSession, data: dict) -> User:
     user = await db.get(User, data["uid"])
     # tv не совпадает, если после выдачи ссылки менялся пароль или почта
     if user is None or not user.is_active or data["tv"] != user.token_version:
@@ -100,7 +100,7 @@ async def _confirm_email_change(db: AsyncSession, data: dict) -> type[User]:
     return user
 
 
-async def confirm_email_change(db: AsyncSession, token: str) -> type[User]:
+async def confirm_email_change(db: AsyncSession, token: str) -> User:
     data = read_change_email_token(token)
     try:
         user = await run_in_transaction(db, _confirm_email_change, data)

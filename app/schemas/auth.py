@@ -28,6 +28,10 @@ class ChangeEmailSchema(BaseModel):
     current_password: str
     new_email: Email
 
+class ConfirmEmailSchema(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    token: str = Field(min_length=1, max_length=2048)
 
 class UserOut(BaseModel):
     id: int
