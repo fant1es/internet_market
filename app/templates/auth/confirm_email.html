@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block title %}Подтверждение почты{% endblock %}
+
+{% block content %}
+  <div class="row justify-content-center">
+    <div class="col-md-8 col-lg-5">
+      <div class="card">
+        <div class="card-body text-center">
+          <h1 class="h4 mb-3">Подтверждение новой почты</h1>
+
+          <div id="ce-pending">
+            <p>Нажмите кнопку, чтобы завершить смену почты.</p>
+            <button type="button" class="btn btn-primary" id="ce-confirm">Подтвердить почту</button>
+          </div>
+
+          <div id="ce-done" hidden>
+            <p class="text-success">Почта изменена. Войдите с новым адресом.</p>
+            <a href="/login" class="btn btn-primary">Войти</a>
+          </div>
+
+          <div id="ce-error" hidden>
+            <p class="text-danger" id="ce-error-text"></p>
+            <a href="/account" class="btn btn-outline-secondary">В личный кабинет</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  <script src="/static/js/confirm-email.js"></script>
+{% endblock %}

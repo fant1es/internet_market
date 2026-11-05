@@ -39,9 +39,9 @@ async def logout(response: Response):
     return {"detail": "Вы вышли из аккаунта"}
 
 
-@auth_router.post("/confirm-email", response_model=UserOut)
-async def confirm_email_change(data: ConfirmEmailSchema, db: Annotated[AsyncSession, Depends(get_db)],
-                               response: Response):
+@auth_router.post("/confirm-email")
+async def confirm_email(data: ConfirmEmailSchema, db: Annotated[AsyncSession, Depends(get_db)],
+                        response: Response):
     user = await user_service.confirm_email_change(db, data.token)
 
     # Удаляем куки, т.к. после подтверждения сессия будет убита

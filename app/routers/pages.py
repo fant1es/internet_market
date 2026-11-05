@@ -1,3 +1,5 @@
+from urllib import response
+
 from fastapi import APIRouter, Request
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import RedirectResponse
@@ -103,3 +105,11 @@ async def account_page(request: Request, user: CurrentUserOptional):
     if not user:
         return RedirectResponse("/login")
     return templates.TemplateResponse("account.html", {"request": request, "user": user})
+
+
+@router.get("/confirm-email")
+async def confirm_email_page(request: Request, user: CurrentUserOptional):
+    response = templates.TemplateResponse("auth/confirm_email.html", {"request": request, "user": user})
+    # Так как в URL лежит токен, запрещаем через политику его отдавать
+    response.headers["Referrer-Policy"] = "no-referrer"
+    return response

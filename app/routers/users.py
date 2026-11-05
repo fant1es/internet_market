@@ -29,9 +29,9 @@ async def change_password(data: ChangePasswordSchema, user: CurrentUser,
     return {"detail": "Пароль изменён"}
 
 
-@router.post("/me/email", response_model=UserOut)
+@router.post("/me/email")
 async def request_email_change(data: ChangeEmailSchema, user: CurrentUser,
-                               db: Annotated[AsyncSession, Depends(get_db)], response: Response,
+                               db: Annotated[AsyncSession, Depends(get_db)],
                                background_tasks: BackgroundTasks):
     link = await user_service.request_email_change(db, user,
                                                    data.current_password, data.new_email)

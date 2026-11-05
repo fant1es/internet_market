@@ -10,7 +10,7 @@ _CHANGE_MAIL_SALT = "change-email"
 
 
 def _serializer(salt: str) -> URLSafeTimedSerializer:
-    return URLSafeTimedSerializer(settings.SECRET_KEY, salt=salt)
+    return URLSafeTimedSerializer(settings.secret_key, salt=salt)
 
 
 def create_change_email_token(user_id: int, new_email: str, token_version: int) -> str:
