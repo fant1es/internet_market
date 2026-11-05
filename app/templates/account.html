@@ -21,7 +21,7 @@
             <div class="mb-3">
               <label class="form-label" for="pf-email">Email</label>
               <input class="form-control" id="pf-email" value="{{ user.email }}" disabled>
-              <div class="form-text">Смена почты появится позже</div>
+            <div class="form-text">Смена почты находится в разделе «Безопасность»</div>
             </div>
 
             <div class="mb-3">
@@ -88,6 +88,32 @@
             <button type="submit" class="btn btn-primary me-2">Сохранить</button>
             <button type="button" class="btn btn-outline-secondary" id="pw-cancel">Отмена</button>
           </form>
+
+          <hr>
+
+          <div id="em-view-actions">
+            <button type="button" class="btn btn-outline-primary" id="em-open">Сменить почту</button>
+          </div>
+
+          <form id="email-form" novalidate hidden>
+            <div class="mb-3">
+              <label class="form-label" for="em-new">Новая почта</label>
+              <input type="email" class="form-control" id="em-new" name="new_email"
+                     autocomplete="off" maxlength="254">
+              <div class="invalid-feedback"></div>
+              <div class="form-text">Мы отправим на неё ссылку подтверждения</div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label" for="em-password">Текущий пароль</label>
+              <input type="password" class="form-control" id="em-password" name="current_password"
+                     autocomplete="current-password" maxlength="128">
+              <div class="invalid-feedback"></div>
+            </div>
+
+            <button type="submit" class="btn btn-primary me-2">Отправить письмо</button>
+            <button type="button" class="btn btn-outline-secondary" id="em-cancel">Отмена</button>
+          </form>
         </div>
       </div>
     </div>
@@ -113,4 +139,5 @@
   <script src="/static/js/orders-ui.js"></script>
   <script src="/static/js/account.js"></script>
   <script src="/static/js/security.js"></script>
+  <script src="/static/js/change-email.js"></script>
 {% endblock %}
