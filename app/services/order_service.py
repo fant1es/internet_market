@@ -148,12 +148,16 @@ async def cancel_order(db: AsyncSession, order_id: int, user_id: int) -> int:
 
 
 # noinspection PyTypeChecker
-async def get_order(db: AsyncSession, order_id: int) -> Any:
-    return await db.scalar(
-        select(Order).where(Order.id == order_id)
-        .options(selectinload(Order.items))
-        .execution_options(populate_existing=True)
-    )
+async def get_order(db: AsyncSession, order_id: int, user_id: int | None = None) -> Any:
+    # Проверка на order_id, чтобы избежать вставки чужого id
+    query = (select(Order).where(Order.id == order_id)
+             .options(selectinload(Order.items))
+             .execution_options(populate_existing=True)
+             )
+    if user_id is not None:
+        query = query.where(Order.user_id == user_id)
+
+    return await db.scalar(query)
 
 
 # noinspection PyTypeChecker
