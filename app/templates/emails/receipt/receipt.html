@@ -1,0 +1,17 @@
+{% extends "_layout.html" %}
+{% block content %}
+<p style="margin:0 0 16px;">Здравствуйте, {{ name }}!</p>
+<p style="margin:0 0 16px;">Заказ №{{ order.id }} оплачен. Чек во вложении (PDF).</p>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;">
+  {% for i in order.items %}
+  <tr>
+    <td style="padding:6px 0;border-bottom:1px solid #e9ecef;">{{ i.product_name }} × {{ i.quantity }}</td>
+    <td align="right" style="padding:6px 0;border-bottom:1px solid #e9ecef;">{{ "%.2f"|format(i.product_price * i.quantity) }}</td>
+  </tr>
+  {% endfor %}
+  <tr>
+    <td style="padding-top:12px;font-weight:bold;">Итого</td>
+    <td align="right" style="padding-top:12px;font-weight:bold;">{{ "%.2f"|format(order.total_amount) }}</td>
+  </tr>
+</table>
+{% endblock %}

@@ -1,0 +1,11 @@
+Здравствуйте, {{ name }}!
+
+Заказ №{{ order.id }} оплачен. Чек во вложении (PDF).
+
+{% for i in order.items %}
+{{ i.product_name }} — {{ i.quantity }} × {{ "%.2f"|format(i.product_price) }}
+{% endfor %}
+
+Итого: {{ "%.2f"|format(order.total_amount) }}
+
+{{ shop_name }}
