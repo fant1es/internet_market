@@ -1,14 +1,19 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, BackgroundTasks
+from fastapi import HTTPException, Response
+from fastapi.responses import HTMLResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.dependencies.auth import get_current_user
-from app.models.order import OrderStatus
 from app.schemas.order import CheckoutIn, OrderOut
 from app.services import order_service
+from app.services.order_service import get_order
 from app.services.receipt_service import send_receipt_for_order
+from app.models.order import OrderStatus
+from app.services.receipt_service import build_receipt_pdf
+from app.services.email_templates import render_receipt_html
 
 router = APIRouter(prefix="/orders", tags=["orders"])
 
@@ -42,3 +47,27 @@ async def pay(order_id: int, background_tasks: BackgroundTasks,
 async def cancel(order_id: int, db: AsyncSession = Depends(get_db), user=Depends(get_current_user)):
     await order_service.cancel_order(db, order_id, user.id)
     return await order_service.get_order(db, order_id)
+
+# --- Раздел с роутами для чеков ----------------------------------------------------------------------------
+async def _get_receipt_order(db, order_id: int, user):
+    is_admin = user.role == "admin"          # поправь под свою модель роли
+    order = await get_order(db, order_id, None if is_admin else user.id)
+    if order is None or order.status not in (OrderStatus.PAID, OrderStatus.COMPLETED):
+        raise HTTPException(404, "Чек не найден")
+    return order
+
+
+@router.get("/{order_id}/receipt", response_class=HTMLResponse)
+async def receipt_page(order_id: int, db: AsyncSession = Depends(get_db),
+                       user=Depends(get_current_user)):
+    return render_receipt_html(await _get_receipt_order(db, order_id, user))
+
+
+@router.get("/{order_id}/receipt.pdf")
+async def receipt_pdf(order_id: int, db: AsyncSession = Depends(get_db),
+                      user=Depends(get_current_user)):
+    pdf = await build_receipt_pdf(await _get_receipt_order(db, order_id, user))
+    return Response(pdf, media_type="application/pdf", headers={
+        "Content-Disposition": f'attachment; filename="receipt_{order_id}.pdf"',
+        "Cache-Control": "private, no-store",
+    })

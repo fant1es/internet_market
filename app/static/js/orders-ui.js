@@ -22,12 +22,19 @@ function formatPhone(p) {
     return m ? `+375 (${m[1]}) ${m[2]}-${m[3]}-${m[4]}` : p;
 }
 
-// Кнопки зависят от статуса: оплата только для pending, отмена еще и для paid
+// Кнопки зависят от статуса: оплата только для pending, отмена еще и для paid,
 function actionsHtml(order) {
     const pay = `<button class="btn btn-success btn-sm order-pay" data-id="${order.id}">Оплатить</button>`;
     const cancel = `<button class="btn btn-outline-danger btn-sm order-cancel" data-id="${order.id}">Отменить</button>`;
+    
+    // Ссылки на чек доступны для paid и completed
+    const receipt = `
+        <a class="btn btn-outline-secondary btn-sm" href="/orders/${order.id}/receipt" target="_blank" rel="noopener">Чек</a>
+        <a class="btn btn-outline-secondary btn-sm" href="/orders/${order.id}/receipt.pdf">Скачать PDF</a>`;
+
     if (order.status === "pending") return pay + cancel;
-    if (order.status === "paid") return cancel;
+    if (order.status === "paid") return receipt + cancel;
+    if (order.status === "completed") return receipt;
     return "";
 }
 
