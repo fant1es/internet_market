@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -8,6 +8,7 @@ from app.dependencies.auth import get_current_user
 from app.models.order import OrderStatus
 from app.schemas.order import CheckoutIn, OrderOut
 from app.services import order_service
+from app.services.receipt_service import send_receipt_for_order
 
 router = APIRouter(prefix="/orders", tags=["orders"])
 
@@ -30,8 +31,10 @@ async def my_orders(
 
 
 @router.post("/{order_id}/pay", response_model=OrderOut, summary="Оплатить заказ с баланса")
-async def pay(order_id: int, db: AsyncSession = Depends(get_db), user=Depends(get_current_user)):
+async def pay(order_id: int, background_tasks: BackgroundTasks,
+              db: AsyncSession = Depends(get_db), user=Depends(get_current_user)):
     await order_service.pay_order(db, order_id, user.id)
+    background_tasks.add_task(send_receipt_for_order, order_id)
     return await order_service.get_order(db, order_id)
 
 

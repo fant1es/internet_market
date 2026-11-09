@@ -4,6 +4,7 @@ from pathlib import Path
 from jinja2 import Environment, FileSystemLoader, StrictUndefined, select_autoescape
 
 from app.config import settings
+from app.models import Order
 
 SHOP_NAME = "Магазин"
 
@@ -46,3 +47,14 @@ def build_old_email_notice(name: str, new_email: str) -> EmailContent:
     """Уведомление о запросе смены, уходит на старый адрес."""
     text, html = _render("email_change_notice", name=name, new_email=mask_email(new_email))
     return EmailContent(f"Запрошена смена почты в магазине «{SHOP_NAME}»", text, html)
+
+
+def build_receipt_email(order: Order, name: str) -> EmailContent:
+    """Рендер письма с чеком."""
+    text, html = _render("receipt/receipt", name=name, order=order)
+    return EmailContent(f"Чек по заказу №{order.id} в магазине «{SHOP_NAME}»", text, html)
+
+
+def render_receipt_html(order: Order) -> str:
+    """HTML чека для PDF и страницы в браузере."""
+    return _env.get_template("receipt/receipt_pdf.html").render(shop_name=SHOP_NAME, order=order)
