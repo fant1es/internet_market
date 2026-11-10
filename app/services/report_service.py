@@ -25,7 +25,7 @@ async def stock_report(db: AsyncSession) -> bytes:
     )
     rows = [(sku, name, brand, cat, price, qty, price * qty, "Да" if active else "Нет")
             for sku, name, brand, cat, price, qty, active in result.all()]
-    return await build_xlsx([Sheet("Остатки", [
+    return await build_xlsx([Sheet("Доступные товары", [
         Column("Артикул"), Column("Название"), Column("Бренд"), Column("Категория"),
         Column("Цена", MONEY), Column("Остаток", "0", highlight_lt=5),
         Column("Стоимость остатка", MONEY, total=True), Column("Активен"),
@@ -73,8 +73,11 @@ async def user_report(db: AsyncSession, user_id: int) -> tuple[bytes, str] | Non
 
     data = await build_xlsx([
         Sheet("Заказы", [Column("№"), Column("Дата", DATETIME), Column("Статус"),
-                         Column("Сумма", MONEY), Column("Адрес"), Column("Телефон")], order_rows),
+                         Column("Сумма", MONEY), Column("Адрес"), Column("Телефон")], order_rows,
+              heading=f"Заказы пользователя {user.name}"),
         Sheet("Транзакции", [Column("Дата", DATETIME), Column("Тип"),
-                         Column("Сумма", MONEY), Column("Заказ №")], tx_rows),
+                         Column("Сумма", MONEY), Column("Заказ №")], tx_rows,
+              heading=f"Движение баланса: {user.name}"),
+
     ])
     return data, f"user_{user_id}.xlsx"
