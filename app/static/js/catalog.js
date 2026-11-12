@@ -1,8 +1,11 @@
 const PAGE_SIZE = 12;
 
-const DEFAULT_STATE = { category: "", search: "", minPrice: "", maxPrice: "", sort: "newest", page: 1 };
-// '...' раскладывают объект, создавая новый, в который копируются данные
-const state = { ...DEFAULT_STATE };
+// Переходим на функцию с созданием словаря из-за brands
+const defaultState = () => ({
+    category: "", search: "", minPrice: "", maxPrice: "",
+    sort: "newest", brands: [], discountOnly: false, page: 1,
+});
+const state = defaultState();
 
 const minPriceInput = document.getElementById("min-price");
 const maxPriceInput = document.getElementById("max-price");
@@ -16,6 +19,8 @@ const productsGrid = document.getElementById("products-grid");
 const pagination = document.getElementById("pagination");
 const searchInput = document.getElementById("search-input");
 const categorySelect = document.getElementById("category-select");
+const brandsBox = document.getElementById("brands-box");
+const discountCheck = document.getElementById("discount-only");
 
 // Границы слайдера
 let bounds = { min: 0, max: 0 };
@@ -108,6 +113,9 @@ function renderProducts(items) {
     productsGrid.innerHTML = items.map((p) => {
         const inStock = p.stock_quantity > 0;
         const imageUrl = productImageUrl(p);
+        const hasDiscount = p.old_price !== null && Number(p.old_price) > Number(p.price);
+        const discountPercent = hasDiscount ?
+            Math.round((1 - Number(p.price) / Number(p.old_price)) * 100) : 0;
         return `
         <div class="col">
           <div class="card h-100">
@@ -117,11 +125,19 @@ function renderProducts(items) {
                     class="card-img-top object-fit-contain" loading="lazy">`
                 : `<div class="d-flex align-items-center justify-content-center text-muted">Нет фото</div>`}
             </a>
+            ${hasDiscount
+                ? `<span class="badge bg-danger position-absolute top-0 start-0 m-2">−${discountPercent}%</span>`
+                : ""}
             <div class="card-body d-flex flex-column">
               <h6 class="card-title">
                 <a href="/product/${p.id}" class="text-decoration-none">${escapeHtml(p.name)}</a>
               </h6>
-              <div class="fw-bold mb-3">${formatPrice(p.price)}</div>
+              <div class="mb-3">
+                <span class="fw-bold">${formatPrice(p.price)}</span>
+                ${hasDiscount
+                  ? `<span class="text-muted text-decoration-line-through small ms-2">${formatPrice(p.old_price)}</span>`
+                  : ""}
+              </div>
               ${inStock
                 ? `<button class="btn btn-primary btn-sm mt-auto add-to-cart"
                            data-id="${p.id}">В корзину</button>`
@@ -146,6 +162,9 @@ async function loadProducts() {
     if (state.minPrice !== "") params.set("min_price", state.minPrice);
     if (state.maxPrice !== "") params.set("max_price", state.maxPrice);
     params.set("sort", state.sort);
+
+    state.brands.forEach((b) => params.append("brand", b)); // ?brand=a&brand=b
+    if (state.discountOnly) params.set("has_discount", "true");
 
     try {
         const data = await api(`/products?${params}`);
@@ -190,12 +209,13 @@ sortSelect.addEventListener("change", () => {
 });
 
 resetBtn.addEventListener("click", async () => {
-    Object.assign(state, DEFAULT_STATE);
+    Object.assign(state, defaultState());   // brands становится новым пустым массивом
     searchInput.value = "";
     categorySelect.value = "";
-    sortSelect.value = DEFAULT_STATE.sort;
+    sortSelect.value = state.sort;
+    discountCheck.checked = false;
     priceRangeValid();
-    await loadPriceBounds();
+    await Promise.all([loadPriceBounds(), loadBrands()]);
     loadProducts();
 });
 
@@ -221,7 +241,7 @@ searchInput.addEventListener("input", debounce(() => {
 categorySelect.addEventListener("change", async () => {
     state.category = categorySelect.value;
     state.page = 1;
-    await loadPriceBounds();   // сбрасывает minPrice/maxPrice
+    await Promise.all([loadPriceBounds(), loadBrands()]);
     loadProducts();
 });
 
@@ -232,6 +252,42 @@ pagination.addEventListener("click", (e) => {
     state.page = Number(btn.dataset.page);
     loadProducts();
     window.scrollTo({ top: 0, behavior: "smooth" });
+});
+
+// Т.к. бренды зависят от категории, то при её смене список и выбранные бренды обновляются
+async function loadBrands() {
+    const params = new URLSearchParams();
+    if (state.category) params.set("category", state.category);
+
+    try {
+        const brands = await api(`/brands?${params}`);
+        state.brands = [];
+        brandsBox.innerHTML = brands.length
+            ? brands.map((b) => `
+                <div class="form-check mb-0">
+                  <input class="form-check-input brand-check" type="checkbox"
+                         id="brand-${escapeHtml(b.slug)}" value="${escapeHtml(b.slug)}">
+                  <label class="form-check-label" for="brand-${escapeHtml(b.slug)}">${escapeHtml(b.name)}</label>
+                </div>`).join("")
+            : `<span class="text-muted small">Нет брендов</span>`;
+    }
+    catch (err) {
+        showAlert(errorText(err));
+    }
+}
+
+// Делегируем один обработчик на весь блок брендов
+brandsBox.addEventListener("change", (e) => {
+    if (!e.target.classList.contains("brand-check")) return;
+    state.brands = [...brandsBox.querySelectorAll(".brand-check:checked")].map((c) => c.value);
+    state.page = 1;
+    loadProducts();
+});
+
+discountCheck.addEventListener("change", () => {
+    state.discountOnly = discountCheck.checked;
+    state.page = 1;
+    loadProducts();
 });
 
 // Шаг цены на один щелчок колеса (поставь своё значение)
@@ -259,5 +315,6 @@ enableWheelPrice(minPriceInput, () => bounds.min);
 enableWheelPrice(maxPriceInput, () => bounds.max);
 
 loadCategories();
+loadBrands();
 loadPriceBounds();
 loadProducts();

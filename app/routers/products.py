@@ -7,7 +7,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.models import Category, Product
+from app.models import Category, Product, Brand
 from app.schemas.product import ProductListOut, ProductOut, PriceRangeOut
 
 router = APIRouter(prefix="/products", tags=["products"])
@@ -43,6 +43,8 @@ async def list_products(
     search: str | None = Query(None, max_length=100, description="поиск по названию"),
     min_price: Decimal | None = Query(None, ge=0, description="цена от (включительно)"),
     max_price: Decimal | None = Query(None, ge=0, description="цена до (включительно)"),
+    brand: list[str] | None = Query(None, description="slug бренда, можно несколько: ?brand=apple&brand=asus"),
+    has_discount: bool = Query(False, description="только товары со скидкой"),
     sort: ProductSort = Query(ProductSort.newest, description="порядок сортировки"),
     page: int = Query(1, ge=1),
     page_size: int = Query(12, ge=1, le=100),
@@ -65,6 +67,16 @@ async def list_products(
         stmt = stmt.where(Product.price >= min_price)
     if max_price is not None:
         stmt = stmt.where(Product.price <= max_price)
+
+    # JOIN с брендами только когда фильтр задан, ибо есть товары без бренда
+    if brand:
+        stmt = stmt.join(Brand, Product.brand_id == Brand.id).where(
+            Brand.slug.in_(brand),
+            Brand.is_active.is_(True),
+        )
+    # old_price > price защищает от некорректных данных и совпадает с условием показа карточки товара
+    if has_discount:
+        stmt = stmt.where(Product.old_price.is_not(None), Product.old_price > Product.price)
 
     # Сколько всего товаров под фильтром (считаем до order_by/offset/limit)
     total = await db.scalar(select(func.count()).select_from(stmt.subquery()))
