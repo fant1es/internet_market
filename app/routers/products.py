@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models import Category, Product
-from app.schemas.product import ProductListOut, ProductOut
+from app.schemas.product import ProductListOut, ProductOut, PriceRangeOut
 
 router = APIRouter(prefix="/products", tags=["products"])
 
@@ -83,6 +83,17 @@ async def list_products(
         "page_size": page_size,
         "pages": math.ceil(total / page_size),
     }
+
+
+@router.get("/price-range", response_model=PriceRangeOut, summary="Границы цен для слайдера")
+async def price_range(category: str | None = Query(None), db: AsyncSession = Depends(get_db)):
+    stmt = _public_products()
+    if category:
+        stmt = stmt.where(Category.slug == category)
+
+    sub = stmt.subquery()
+    row = (await db.execute(select(func.min(sub.c.price), func.max(sub.c.price)))).one()
+    return {"price_min": row[0], "price_max": row[1]}
 
 
 @router.get("/{product_id}", response_model=ProductOut, summary="Карточка товара")

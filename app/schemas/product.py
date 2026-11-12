@@ -26,3 +26,8 @@ class ProductListOut(BaseModel):
     page: int        # текущая страница (с 1)
     page_size: int   # размер страницы
     pages: int       # всего страниц
+
+
+class PriceRangeOut(BaseModel): # Нужно для отдельной обработки слайдера
+    price_min: Decimal | None  # None, если в выборке нет товаров
+    price_max: Decimal | None
