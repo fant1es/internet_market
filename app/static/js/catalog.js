@@ -234,6 +234,30 @@ pagination.addEventListener("click", (e) => {
     window.scrollTo({ top: 0, behavior: "smooth" });
 });
 
+// Шаг цены на один щелчок колеса (поставь своё значение)
+const WHEEL_STEP = 15;
+
+function enableWheelPrice(input, fallback) {
+    input.addEventListener("wheel", (e) => {
+        if (document.activeElement !== input) return; // без фокуса листаем страницу как обычно
+        e.preventDefault();
+
+        const direction = e.deltaY < 0 ? 1 : -1; // вверх = больше
+        const current = input.value !== "" ? Number(input.value) : fallback();
+        const next = current + direction * WHEEL_STEP;
+
+        // Не выходим за границы и не даём "от" обогнать "до"
+        const lo = input === maxPriceInput && minPriceInput.value !== "" ? Number(minPriceInput.value) : bounds.min;
+        const hi = input === minPriceInput && maxPriceInput.value !== "" ? Number(maxPriceInput.value) : bounds.max;
+        input.value = Math.min(Math.max(next, lo), hi);
+
+        onPriceChange();
+    }, { passive: false });
+}
+
+enableWheelPrice(minPriceInput, () => bounds.min);
+enableWheelPrice(maxPriceInput, () => bounds.max);
+
 loadCategories();
 loadPriceBounds();
 loadProducts();
