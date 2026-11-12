@@ -1,3 +1,5 @@
+from decimal import Decimal
+from enum import Enum
 import math
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
@@ -11,6 +13,37 @@ from app.schemas.admin_product import ActiveUpdate, ProductAdminListOut, Product
 from app.services import product_image_service
 from app.services.image_storage import MAX_IMAGE_BYTES
 from app.utils.database import get_or_404, commit_or_409
+
+LOW_STOCK = 5  # порог "мало на складе" (для фронтенда синхронизировать с admin.js)
+
+
+class AdminSort(str, Enum):
+    id_asc = "id_asc"
+    newest = "newest"
+    price_asc = "price_asc"
+    price_desc = "price_desc"
+    stock_asc = "stock_asc"
+    stock_desc = "stock_desc"
+    name = "name"
+
+
+class StockFilter(str, Enum):
+    in_stock = "in_stock"
+    low = "low"
+    out = "out"
+
+
+# Первым ключом основное сравнение, вторым - всегда id, чтобы порядок между страницами был стабильным.
+ORDER_BY = {
+    AdminSort.id_asc: (Product.id.asc(),),
+    AdminSort.newest: (Product.created_at.desc(), Product.id.desc()),
+    AdminSort.price_asc: (Product.price.asc(), Product.id.asc()),
+    AdminSort.price_desc: (Product.price.desc(), Product.id.desc()),
+    AdminSort.stock_asc: (Product.stock_quantity.asc(), Product.id.asc()),
+    AdminSort.stock_desc: (Product.stock_quantity.desc(), Product.id.desc()),
+    AdminSort.name: (Product.name.asc(), Product.id.asc()),
+}
+
 
 router = APIRouter(
     prefix="/admin/products",
@@ -42,10 +75,20 @@ async def list_products(
         search: str | None = Query(None, max_length=100, description="поиск по названию или артикулу"),
         category: str | None = Query(None, description="slug категории"),
         is_active: bool | None = Query(None, description="true: только видимые, false: только скрытые"),
+        brand_id: int | None = Query(None, description="id бренда"),
+        without_brand: bool = Query(False, description="только товары без бренда (brand_id игнорируется)"),
+        min_price: Decimal | None = Query(None, ge=0, description="цена от (включительно)"),
+        max_price: Decimal | None = Query(None, ge=0, description="цена до (включительно)"),
+        has_discount: bool = Query(False, description="только товары со скидкой"),
+        stock: StockFilter | None = Query(None, description="in_stock, low (1..LOW_STOCK) или out"),
+        sort: AdminSort = Query(AdminSort.id_asc, description="порядок сортировки"),
         page: int = Query(1, ge=1),
         page_size: int = Query(20, ge=1, le=100),
         db: AsyncSession = Depends(get_db),
 ):
+    if min_price is not None and max_price is not None and min_price > max_price:
+        raise HTTPException(status_code=422, detail="Минимальная цена не может быть больше максимальной")
+
     stmt = select(Product)
 
     if category:
@@ -56,10 +99,30 @@ async def list_products(
     if is_active is not None:
         stmt = stmt.where(Product.is_active.is_(is_active))
 
+    # Бренд фильтруем по brand_id напрямую, JOIN не нужен
+    if without_brand:
+        stmt = stmt.where(Product.brand_id.is_(None))
+    elif brand_id is not None:
+        stmt = stmt.where(Product.brand_id == brand_id)
+
+    if min_price is not None:
+        stmt = stmt.where(Product.price >= min_price)
+    if max_price is not None:
+        stmt = stmt.where(Product.price <= max_price)
+    if has_discount:
+        stmt = stmt.where(Product.old_price.is_not(None), Product.old_price > Product.price)
+
+    if stock == StockFilter.in_stock:
+        stmt = stmt.where(Product.stock_quantity > 0)
+    elif stock == StockFilter.low:
+        stmt = stmt.where(Product.stock_quantity > 0, Product.stock_quantity <= LOW_STOCK)
+    elif stock == StockFilter.out:
+        stmt = stmt.where(Product.stock_quantity == 0)
+
     total = await db.scalar(select(func.count()).select_from(stmt.subquery()))
 
     result = await db.scalars(
-        stmt.order_by(Product.id).offset((page - 1) * page_size).limit(page_size)
+        stmt.order_by(*ORDER_BY[sort]).offset((page - 1) * page_size).limit(page_size)
     )
 
     return {
