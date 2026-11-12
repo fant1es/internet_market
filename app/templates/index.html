@@ -1,38 +1,53 @@
 {% extends "base.html" %}
-
+{% block head %}
+  <link rel="stylesheet" href="../static/css/catalog.css">
+{% endblock %}
 {% block title %}Каталог{% endblock %}
 
 {% block content %}
   <h1 class="mb-4">Каталог</h1>
 
-  <div class="row g-2 mb-4">
-    <div class="col-md-8">
-      <input type="search" id="search-input" class="form-control" placeholder="Поиск по названию...">
+<div class="row g-2 mb-2">
+  <div class="col-md-8">
+    <input type="search" id="search-input" class="form-control" placeholder="Поиск по названию...">
+  </div>
+  <div class="col-md-4">
+    <select id="category-select" class="form-select">
+      <option value="">Все категории</option>
+    </select>
+  </div>
+</div>
+
+<div class="row g-2 mb-4 align-items-end">
+  <div class="col-12 col-lg-7">
+    <div class="d-flex justify-content-between small text-muted mb-1">
+      <span>Цена</span><span id="price-label"></span>
     </div>
-    <div class="col-md-4">
-      <select id="category-select" class="form-select">
-        <option value="">Все категории</option>
-      </select>
-    </div>
-    <div class="row g-2 mb-4">
-      <div class="col-6 col-md-2">
-        <input type="number" id="min-price" class="form-control" placeholder="Цена от" min="0" step="0.01">
+    <div class="d-flex align-items-center gap-3">
+      <input type="number" id="min-price" class="form-control form-control-sm"
+             style="width: 7.5rem" placeholder="от" min="0" step="0.01">
+      <div class="range-dual flex-grow-1">
+        <div class="range-track"></div>
+        <div class="range-fill" id="range-fill"></div>
+        <input type="range" id="range-min">
+        <input type="range" id="range-max">
       </div>
-      <div class="col-6 col-md-2">
-        <input type="number" id="max-price" class="form-control" placeholder="Цена до" min="0" step="0.01">
-      </div>
-      <div class="col-md-5">
-        <select id="sort-select" class="form-select">
-          <option value="newest">Сначала новые</option>
-          <option value="price_asc">Сначала дешёвые</option>
-          <option value="price_desc">Сначала дорогие</option>
-        </select>
-      </div>
-      <div class="col-md-3">
-        <button type="button" id="reset-filters" class="btn btn-outline-secondary w-100">Сбросить</button>
-      </div>
+      <input type="number" id="max-price" class="form-control form-control-sm"
+             style="width: 7.5rem" placeholder="до" min="0" step="0.01">
     </div>
   </div>
+
+  <div class="col-8 col-lg-3">
+    <select id="sort-select" class="form-select">
+      <option value="newest">Сначала новые</option>
+      <option value="price_asc">Сначала дешёвые</option>
+      <option value="price_desc">Сначала дорогие</option>
+    </select>
+  </div>
+  <div class="col-4 col-lg-2">
+    <button type="button" id="reset-filters" class="btn btn-outline-secondary w-100">Сбросить</button>
+  </div>
+</div>
 
   <div id="products-grid" class="row row-cols-1 row-cols-sm-2 row-cols-lg-4 g-3"></div>
 

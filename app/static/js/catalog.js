@@ -6,12 +6,97 @@ const state = { ...DEFAULT_STATE };
 
 const minPriceInput = document.getElementById("min-price");
 const maxPriceInput = document.getElementById("max-price");
+const rangeMin = document.getElementById("range-min");
+const rangeMax = document.getElementById("range-max");
+const rangeFill = document.getElementById("range-fill");
+const priceLabel = document.getElementById("price-label");
 const sortSelect = document.getElementById("sort-select");
 const resetBtn = document.getElementById("reset-filters");
 const productsGrid = document.getElementById("products-grid");
 const pagination = document.getElementById("pagination");
 const searchInput = document.getElementById("search-input");
 const categorySelect = document.getElementById("category-select");
+
+// Границы слайдера
+let bounds = { min: 0, max: 0 };
+
+// Перерисовывает синюю полосу между ползунками и подпись
+function updateSlider() {
+    const lo = Number(rangeMin.value);
+    const hi = Number(rangeMax.value);
+    const span = bounds.max - bounds.min || 1;
+
+    rangeFill.style.left = ((lo - bounds.min) / span) * 100 + "%";
+    rangeFill.style.width = ((hi - lo) / span) * 100 + "%";
+    priceLabel.textContent = `${lo} — ${hi} BYN`;
+
+    // Если оба ползунка в одной точке, наверх выводим тот, который можно сдвинуть "наружу",
+    // иначе один из них будет невозможно схватить
+    rangeMin.style.zIndex = lo > (bounds.min + bounds.max) / 2 ? 3 : 1;
+}
+
+// Границы зависят от категории - выбор цены при этом сбрасывается
+async function loadPriceBounds() {
+    const params = new URLSearchParams();
+    if (state.category) params.set("category", state.category);
+
+    try {
+        const data = await api(`/products/price-range?${params}`);
+        const empty = data.price_min === null;
+        bounds = empty
+            ? { min: 0, max: 0 }
+            : { min: Math.floor(Number(data.price_min)), max: Math.ceil(Number(data.price_max)) };
+
+        for (const r of [rangeMin, rangeMax]) {
+            r.min = bounds.min;
+            r.max = bounds.max;
+            r.step = 1;
+            r.disabled = empty;
+        }
+        rangeMin.value = bounds.min;
+        rangeMax.value = bounds.max;
+
+        state.minPrice = "";
+        state.maxPrice = "";
+        minPriceInput.value = "";
+        maxPriceInput.value = "";
+        minPriceInput.placeholder = `от ${bounds.min}`;
+        maxPriceInput.placeholder = `до ${bounds.max}`;
+        updateSlider();
+    }
+    catch (err) {
+        showAlert(errorText(err));
+    }
+}
+
+const reloadFromFirstPage = debounce(() => {
+    state.page = 1;
+    loadProducts();
+});
+
+function onSlide(e) {
+    let lo = Number(rangeMin.value);
+    let hi = Number(rangeMax.value);
+
+    // Ползунки не должны перескакивать друг через друга
+    if (lo > hi) {
+        if (e.target === rangeMin) lo = hi; else hi = lo;
+        rangeMin.value = lo;
+        rangeMax.value = hi;
+    }
+
+    // Если ползунок стоит на краю, фильтр по этой стороне не нужен
+    state.minPrice = lo > bounds.min ? String(lo) : "";
+    state.maxPrice = hi < bounds.max ? String(hi) : "";
+    minPriceInput.value = state.minPrice;
+    maxPriceInput.value = state.maxPrice;
+
+    updateSlider();
+    reloadFromFirstPage();
+}
+
+rangeMin.addEventListener("input", onSlide);
+rangeMax.addEventListener("input", onSlide);
 
 function renderProducts(items) {
     if (items.length === 0) {
@@ -87,6 +172,12 @@ const onPriceChange = debounce(() => {
     state.minPrice = minPriceInput.value.trim();
     state.maxPrice = maxPriceInput.value.trim();
     state.page = 1;
+
+    // подтягиваем ползунки (браузер сам ограничит значение границами min/max)
+    rangeMin.value = state.minPrice !== "" ? state.minPrice : bounds.min;
+    rangeMax.value = state.maxPrice !== "" ? state.maxPrice : bounds.max;
+    updateSlider();
+
     if (priceRangeValid()) loadProducts();
 });
 minPriceInput.addEventListener("input", onPriceChange);
@@ -98,15 +189,13 @@ sortSelect.addEventListener("change", () => {
     loadProducts();
 });
 
-resetBtn.addEventListener("click", () => {
-    // Запись всех данных из DEFAULT_STATE в state
+resetBtn.addEventListener("click", async () => {
     Object.assign(state, DEFAULT_STATE);
     searchInput.value = "";
     categorySelect.value = "";
-    minPriceInput.value = "";
-    maxPriceInput.value = "";
     sortSelect.value = DEFAULT_STATE.sort;
     priceRangeValid();
+    await loadPriceBounds();
     loadProducts();
 });
 
@@ -129,9 +218,10 @@ searchInput.addEventListener("input", debounce(() => {
     loadProducts();
 }));
 
-categorySelect.addEventListener("change", () => {
+categorySelect.addEventListener("change", async () => {
     state.category = categorySelect.value;
     state.page = 1;
+    await loadPriceBounds();   // сбрасывает minPrice/maxPrice
     loadProducts();
 });
 
@@ -145,4 +235,5 @@ pagination.addEventListener("click", (e) => {
 });
 
 loadCategories();
+loadPriceBounds();
 loadProducts();
