@@ -1,8 +1,13 @@
 const PAGE_SIZE = 12;
 
-// Текущее состояние фильтров
-const state = { category: "", search: "", page: 1 };
+const DEFAULT_STATE = { category: "", search: "", minPrice: "", maxPrice: "", sort: "newest", page: 1 };
+// '...' раскладывают объект, создавая новый, в который копируются данные
+const state = { ...DEFAULT_STATE };
 
+const minPriceInput = document.getElementById("min-price");
+const maxPriceInput = document.getElementById("max-price");
+const sortSelect = document.getElementById("sort-select");
+const resetBtn = document.getElementById("reset-filters");
 const productsGrid = document.getElementById("products-grid");
 const pagination = document.getElementById("pagination");
 const searchInput = document.getElementById("search-input");
@@ -53,6 +58,9 @@ async function loadProducts() {
     const params = new URLSearchParams({ page: state.page, page_size: PAGE_SIZE });
     if (state.category) params.set("category", state.category);
     if (state.search) params.set("search", state.search);
+    if (state.minPrice !== "") params.set("min_price", state.minPrice);
+    if (state.maxPrice !== "") params.set("max_price", state.maxPrice);
+    params.set("sort", state.sort);
 
     try {
         const data = await api(`/products?${params}`);
@@ -65,6 +73,42 @@ async function loadProducts() {
         showAlert(errorText(err));
     }
 }
+
+// Проверка диапазона на клиенте, чтобы не слать заведомо плохой запрос
+function priceRangeValid() {
+    const bad = state.minPrice !== "" && state.maxPrice !== ""
+        && Number(state.minPrice) > Number(state.maxPrice);
+    minPriceInput.classList.toggle("is-invalid", bad);
+    maxPriceInput.classList.toggle("is-invalid", bad);
+    return !bad;
+}
+
+const onPriceChange = debounce(() => {
+    state.minPrice = minPriceInput.value.trim();
+    state.maxPrice = maxPriceInput.value.trim();
+    state.page = 1;
+    if (priceRangeValid()) loadProducts();
+});
+minPriceInput.addEventListener("input", onPriceChange);
+maxPriceInput.addEventListener("input", onPriceChange);
+
+sortSelect.addEventListener("change", () => {
+    state.sort = sortSelect.value;
+    state.page = 1;
+    loadProducts();
+});
+
+resetBtn.addEventListener("click", () => {
+    // Запись всех данных из DEFAULT_STATE в state
+    Object.assign(state, DEFAULT_STATE);
+    searchInput.value = "";
+    categorySelect.value = "";
+    minPriceInput.value = "";
+    maxPriceInput.value = "";
+    sortSelect.value = DEFAULT_STATE.sort;
+    priceRangeValid();
+    loadProducts();
+});
 
 async function loadCategories() {
     try {
