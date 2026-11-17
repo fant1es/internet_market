@@ -21,9 +21,7 @@ const searchInput = document.getElementById("search-input");
 const categorySelect = document.getElementById("category-select");
 const brandsBox = document.getElementById("brands-box");
 const discountCheck = document.getElementById("discount-only");
-const filtersCol = document.getElementById("filters-col");
 const filtersBox = document.getElementById("filters-box");
-const catalogMain = document.getElementById("catalog-main");
 
 // Границы слайдера
 let bounds = { min: 0, max: 0 };
@@ -268,7 +266,7 @@ async function loadBrands() {
         state.brands = [];
         brandsBox.innerHTML = brands.length
             ? brands.map((b) => `
-                <div class="form-check mb-0">
+                <div class="form-check">
                   <input class="form-check-input brand-check" type="checkbox"
                          id="brand-${escapeHtml(b.slug)}" value="${escapeHtml(b.slug)}">
                   <label class="form-check-label" for="brand-${escapeHtml(b.slug)}">${escapeHtml(b.name)}</label>
@@ -288,20 +286,13 @@ brandsBox.addEventListener("change", (e) => {
     loadProducts();
 });
 
-// Панель показываем только если у категории есть характеристики и под неё сужаем сетку
-function setSidebarVisible(visible) {
-    filtersCol.classList.toggle("d-none", !visible);
-    catalogMain.classList.toggle("col-lg-9", visible);
-}
-
 // Характеристики зависят от категории: при её смене панель перерисовывается, а выбранные варианты сбрасываются
 async function loadFilters() {
     state.options = []; // сбрасываем сразу до ответа
     const slug = state.category;
 
     if (!slug) {
-        filtersBox.innerHTML = "";
-        setSidebarVisible(false);
+        filtersBox.innerHTML = `<p class="small text-muted mt-3 mb-0">Выберите категорию, чтобы фильтровать по характеристикам.</p>`;
         return;
     }
 
@@ -312,7 +303,7 @@ async function loadFilters() {
         // Пока ждали ответ категорию уже могли сменить
         if (slug !== state.category) return;
 
-        // Первые две характеристики раскрыты, остальные свёрнуты 
+        // Первые две характеристики раскрыты, остальные свёрнуты
         filtersBox.innerHTML = attributes.map((a, i) => `
             <details class="filter-group" ${i < 2 ? "open" : ""}>
               <summary>${escapeHtml(a.name)}</summary>
@@ -325,11 +316,8 @@ async function loadFilters() {
                   </div>`).join("")}
               </div>
             </details>`).join("");
-
-        setSidebarVisible(attributes.length > 0);
     }
     catch (err) {
-        setSidebarVisible(false);
         showAlert(errorText(err));
     }
 }
