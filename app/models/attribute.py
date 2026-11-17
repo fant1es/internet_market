@@ -12,6 +12,9 @@ class Attribute(Base):
     name: str = Column(String, nullable=False)
     slug: str = Column(String, nullable=False)
 
+    # Позиция атрибута среди всех атрибутов
+    position: int = Column(Integer, nullable=False, default=0, server_default="0")
+
     # Внутри категории slug уникален. Индекс по category_id этот constraint уже покрывает
     __table_args__ = (
         UniqueConstraint('category_id', 'slug', name='uq_attributes_category_slug'),
@@ -25,6 +28,9 @@ class AttributeOption(Base):
     id: int = Column(Integer, primary_key=True)
     attribute_id: int = Column(Integer, ForeignKey('attributes.id', ondelete='CASCADE'), nullable=False)
     value: str = Column(String, nullable=False)
+
+    # Позиция варианта атрибута среди всех вариантов
+    position: int = Column(Integer, nullable=False, default=0, server_default="0")
 
     __table_args__ = (
         UniqueConstraint('attribute_id', 'value', name='uq_attribute_options_attribute_value'),
