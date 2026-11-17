@@ -1,9 +1,9 @@
 const PAGE_SIZE = 12;
 
-// Переходим на функцию с созданием словаря из-за brands
+// Переходим на функцию с созданием словаря из-за brands и options (массивы)
 const defaultState = () => ({
     category: "", search: "", minPrice: "", maxPrice: "",
-    sort: "newest", brands: [], discountOnly: false, page: 1,
+    sort: "newest", brands: [], options: [], discountOnly: false, page: 1,
 });
 const state = defaultState();
 
@@ -21,6 +21,9 @@ const searchInput = document.getElementById("search-input");
 const categorySelect = document.getElementById("category-select");
 const brandsBox = document.getElementById("brands-box");
 const discountCheck = document.getElementById("discount-only");
+const filtersCol = document.getElementById("filters-col");
+const filtersBox = document.getElementById("filters-box");
+const catalogMain = document.getElementById("catalog-main");
 
 // Границы слайдера
 let bounds = { min: 0, max: 0 };
@@ -164,6 +167,7 @@ async function loadProducts() {
     params.set("sort", state.sort);
 
     state.brands.forEach((b) => params.append("brand", b)); // ?brand=a&brand=b
+    state.options.forEach((id) => params.append("option", id)); // ?option=3&option=7
     if (state.discountOnly) params.set("has_discount", "true");
 
     try {
@@ -209,13 +213,13 @@ sortSelect.addEventListener("change", () => {
 });
 
 resetBtn.addEventListener("click", async () => {
-    Object.assign(state, defaultState());   // brands становится новым пустым массивом
+    Object.assign(state, defaultState());   // brands и options становятся новыми пустыми массивами
     searchInput.value = "";
     categorySelect.value = "";
     sortSelect.value = state.sort;
     discountCheck.checked = false;
     priceRangeValid();
-    await Promise.all([loadPriceBounds(), loadBrands()]);
+    await Promise.all([loadPriceBounds(), loadBrands(), loadFilters()]);
     loadProducts();
 });
 
@@ -241,7 +245,7 @@ searchInput.addEventListener("input", debounce(() => {
 categorySelect.addEventListener("change", async () => {
     state.category = categorySelect.value;
     state.page = 1;
-    await Promise.all([loadPriceBounds(), loadBrands()]);
+    await Promise.all([loadPriceBounds(), loadBrands(), loadFilters()]);
     loadProducts();
 });
 
@@ -280,6 +284,60 @@ async function loadBrands() {
 brandsBox.addEventListener("change", (e) => {
     if (!e.target.classList.contains("brand-check")) return;
     state.brands = [...brandsBox.querySelectorAll(".brand-check:checked")].map((c) => c.value);
+    state.page = 1;
+    loadProducts();
+});
+
+// Панель показываем только если у категории есть характеристики и под неё сужаем сетку
+function setSidebarVisible(visible) {
+    filtersCol.classList.toggle("d-none", !visible);
+    catalogMain.classList.toggle("col-lg-9", visible);
+}
+
+// Характеристики зависят от категории: при её смене панель перерисовывается, а выбранные варианты сбрасываются
+async function loadFilters() {
+    state.options = []; // сбрасываем сразу до ответа
+    const slug = state.category;
+
+    if (!slug) {
+        filtersBox.innerHTML = "";
+        setSidebarVisible(false);
+        return;
+    }
+
+    // Чтобы не висела панель предыдущей категории, пока идёт запрос
+    filtersBox.innerHTML = "";
+    try {
+        const attributes = await api(`/categories/${encodeURIComponent(slug)}/filters`);
+        // Пока ждали ответ категорию уже могли сменить
+        if (slug !== state.category) return;
+
+        // Первые две характеристики раскрыты, остальные свёрнуты 
+        filtersBox.innerHTML = attributes.map((a, i) => `
+            <details class="filter-group" ${i < 2 ? "open" : ""}>
+              <summary>${escapeHtml(a.name)}</summary>
+              <div class="pb-2">
+                ${a.options.map((o) => `
+                  <div class="form-check">
+                    <input class="form-check-input option-check" type="checkbox"
+                           id="option-${o.id}" value="${o.id}">
+                    <label class="form-check-label" for="option-${o.id}">${escapeHtml(o.value)}</label>
+                  </div>`).join("")}
+              </div>
+            </details>`).join("");
+
+        setSidebarVisible(attributes.length > 0);
+    }
+    catch (err) {
+        setSidebarVisible(false);
+        showAlert(errorText(err));
+    }
+}
+
+// Делегирование: один обработчик на всю панель характеристик
+filtersBox.addEventListener("change", (e) => {
+    if (!e.target.classList.contains("option-check")) return;
+    state.options = [...filtersBox.querySelectorAll(".option-check:checked")].map((c) => Number(c.value));
     state.page = 1;
     loadProducts();
 });
