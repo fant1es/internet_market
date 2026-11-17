@@ -7,3 +7,15 @@ class CategoryOut(BaseModel):
     id: int
     name: str
     slug: str
+
+
+class FilterOptionOut(BaseModel):
+    id: int
+    value: str
+
+
+class FilterAttributeOut(BaseModel):
+    id: int
+    name: str
+    slug: str
+    options: list[FilterOptionOut]

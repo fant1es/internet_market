@@ -1,13 +1,14 @@
 import math
+from collections import defaultdict
 from decimal import Decimal
 from enum import Enum
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import func, select
+from sqlalchemy import exists, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.models import Category, Product, Brand
+from app.models import Attribute, AttributeOption, Brand, Category, Product, ProductOption
 from app.schemas.product import ProductListOut, ProductOut, PriceRangeOut
 
 router = APIRouter(prefix="/products", tags=["products"])
@@ -37,6 +38,42 @@ def _public_products():
     )
 
 
+# noinspection PyTypeChecker
+async def _filter_by_options(db: AsyncSession, stmt, option_ids: list[int], category_slug: str | None):
+    """Фильтр по вариантам характеристик: внутри одного атрибута 'или', между атрибутами 'и'"""
+    ids = set(option_ids)
+
+    found = select(AttributeOption.id, AttributeOption.attribute_id).where(AttributeOption.id.in_(ids))
+    if category_slug:
+        # Если выбрана категория, варианты должны относиться к её характеристикам
+        found = (
+            found.join(Attribute, Attribute.id == AttributeOption.attribute_id)
+            .join(Category, Category.id == Attribute.category_id)
+            .where(Category.slug == category_slug)
+        )
+    rows = (await db.execute(found)).all()
+
+    # Если нашлось меньше, чем передали: часть id не существует или чужая для категории.
+    # Лучше ошибка, чем молчаливое игнорирование: иначе фильтр выглядел бы применённым
+    if len(rows) != len(ids):
+        raise HTTPException(
+            status_code=422,
+            detail="Вариант характеристики не найден или не относится к выбранной категории",
+        )
+
+    # Группируем выбранные варианты по атрибутам: attribute_id -> [option_id, ...]
+    groups: dict[int, list[int]] = defaultdict(list)
+    for option_id, attribute_id in rows:
+        groups[attribute_id].append(option_id)
+
+    # По одному EXISTS на атрибут, т.к. JOIN размножал бы строки товаров при нескольких вариантах
+    for group in groups.values():
+        stmt = stmt.where(
+            exists().where(ProductOption.product_id == Product.id, ProductOption.option_id.in_(group))
+        )
+    return stmt
+
+
 @router.get("", response_model=ProductListOut, summary="Список товаров")
 async def list_products(
     category: str | None = Query(None, description="slug категории, например 'laptops'"),
@@ -48,6 +85,7 @@ async def list_products(
     sort: ProductSort = Query(ProductSort.newest, description="порядок сортировки"),
     page: int = Query(1, ge=1),
     page_size: int = Query(12, ge=1, le=100),
+    option: list[int] | None = Query(None, description="id варианта характеристики, можно несколько: ?option=3&option=7"),
     db: AsyncSession = Depends(get_db),
 ):
     if min_price is not None and max_price is not None and min_price > max_price:
@@ -77,6 +115,9 @@ async def list_products(
     # old_price > price защищает от некорректных данных и совпадает с условием показа карточки товара
     if has_discount:
         stmt = stmt.where(Product.old_price.is_not(None), Product.old_price > Product.price)
+
+    if option:
+        stmt = await _filter_by_options(db, stmt, option, category)
 
     # Сколько всего товаров под фильтром (считаем до order_by/offset/limit)
     total = await db.scalar(select(func.count()).select_from(stmt.subquery()))
