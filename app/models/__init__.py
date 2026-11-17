@@ -7,3 +7,4 @@ from app.models.order import Order
 from app.models.order_item import OrderItem
 from app.models.brands import Brand
 from app.models.balance_transaction import BalanceTransaction
+from app.models.attribute import Attribute, AttributeOption, ProductOption
