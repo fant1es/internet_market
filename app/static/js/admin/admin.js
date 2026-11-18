@@ -1,4 +1,5 @@
 const LOW_STOCK = 5; // Здесь такое же значение, что и в роутере
+const PAGE_SIZE = 20;
 
 const defaultState = () => ({
     search: "", is_active: "", category: "",
@@ -7,17 +8,18 @@ const defaultState = () => ({
 });
 const state = defaultState();
 
-const PAGE_SIZE = 20;
-
 const productsBody = document.getElementById("products-body");
 const pagination = document.getElementById("pagination");
 const searchInput = document.getElementById("search-input");
 const statusSelect = document.getElementById("status-select");
 const categorySelect = document.getElementById("category-select");
-
 const minPriceInput = document.getElementById("min-price");
 const maxPriceInput = document.getElementById("max-price");
-const brandSelect = document.getElementById("brand-select");
+const rangeMin = document.getElementById("range-min");
+const rangeMax = document.getElementById("range-max");
+const rangeFill = document.getElementById("range-fill");
+const priceLabel = document.getElementById("price-label");
+const brandsBox = document.getElementById("brands-box");
 const stockSelect = document.getElementById("stock-select");
 const sortSelect = document.getElementById("sort-select");
 const discountCheck = document.getElementById("discount-only");
@@ -27,6 +29,7 @@ const resetBtn = document.getElementById("reset-filters");
 const categoryNames = {};
 const brandNames = {};
 
+// ---------- Таблица ----------
 function renderRow(p) {
     const img = productImageUrl(p);
     const thumb = img
@@ -86,7 +89,6 @@ async function loadProducts() {
     if (state.search) params.set("search", state.search);
     if (state.category) params.set("category", state.category);
     if (state.is_active) params.set("is_active", state.is_active);
-
     if (state.minPrice !== "") params.set("min_price", state.minPrice);
     if (state.maxPrice !== "") params.set("max_price", state.maxPrice);
     if (state.brand === "none") params.set("without_brand", "true");
@@ -113,58 +115,107 @@ async function loadProducts() {
     }
 }
 
-// Словари нужны, чтобы показывать названия + для фильтра по категории
-async function loadDictionaries() {
+const reloadFromFirstPage = debounce(() => {
+    state.page = 1;
+    loadProducts();
+});
+
+// ---------- Слайдер цены ----------
+// Границы слайдера
+let bounds = { min: 0, max: 0 };
+
+// Перерисовывает полосу между ползунками и подпись
+function updateSlider() {
+    const lo = Number(rangeMin.value);
+    const hi = Number(rangeMax.value);
+    const span = bounds.max - bounds.min || 1;
+
+    rangeFill.style.left = ((lo - bounds.min) / span) * 100 + "%";
+    rangeFill.style.width = ((hi - lo) / span) * 100 + "%";
+    priceLabel.textContent = `${lo} — ${hi} BYN`;
+
+    // Если оба ползунка в одной точке, наверх выводим тот, который можно сдвинуть "наружу"
+    rangeMin.style.zIndex = lo > (bounds.min + bounds.max) / 2 ? 3 : 1;
+}
+
+// Границы берём из самого админского списка (самый дешёвый и самый дорогой товар),
+// чтобы в диапазон попадали и скрытые товары. Зависят от категории; выбор цены при этом сбрасывается
+async function loadPriceBounds() {
+    const base = { page: 1, page_size: 1 };
+    if (state.category) base.category = state.category;
+    const q = (sort) => new URLSearchParams({ ...base, sort });
+
     try {
-        const [categories, brands] = await Promise.all([api("/categories"), api("/brands")]);
+        const [cheap, expensive] = await Promise.all([
+            api(`/admin/products?${q("price_asc")}`),
+            api(`/admin/products?${q("price_desc")}`),
+        ]);
+        const empty = cheap.items.length === 0;
+        bounds = empty
+            ? { min: 0, max: 0 }
+            : {
+                min: Math.floor(Number(cheap.items[0].price)),
+                max: Math.ceil(Number(expensive.items[0].price)),
+            };
 
-        categories.forEach((c) => { categoryNames[c.id] = c.name; });
-        brands.forEach((b) => { brandNames[b.id] = b.name; });
+        for (const r of [rangeMin, rangeMax]) {
+            r.min = bounds.min;
+            r.max = bounds.max;
+            r.step = 1;
+            r.disabled = empty;
+        }
+        rangeMin.value = bounds.min;
+        rangeMax.value = bounds.max;
 
-        categorySelect.innerHTML += categories
-            .map((c) => `<option value="${escapeHtml(c.slug)}">${escapeHtml(c.name)}</option>`)
-            .join("");
-
-        brandSelect.innerHTML += brands
-        .map((b) => `<option value="${b.id}">${escapeHtml(b.name)}</option>`)
-        .join("");
+        state.minPrice = "";
+        state.maxPrice = "";
+        minPriceInput.value = "";
+        maxPriceInput.value = "";
+        minPriceInput.placeholder = `от ${bounds.min}`;
+        maxPriceInput.placeholder = `до ${bounds.max}`;
+        minPriceInput.classList.remove("is-invalid");
+        maxPriceInput.classList.remove("is-invalid");
+        updateSlider();
     }
     catch (err) {
         showAlert(errorText(err));
     }
 }
 
-// --- Обработчики ---
-searchInput.addEventListener("input", debounce(() => {
-    state.search = searchInput.value.trim();
-    state.page = 1; // при смене фильтра всегда возвращаемся на первую страницу
-    loadProducts();
-}));
+function onSlide(e) {
+    let lo = Number(rangeMin.value);
+    let hi = Number(rangeMax.value);
 
-statusSelect.addEventListener("change", () => {
-    state.is_active = statusSelect.value;
-    state.page = 1;
-    loadProducts();
-});
+    // Ползунки не должны перескакивать друг через друга
+    if (lo > hi) {
+        if (e.target === rangeMin) lo = hi; else hi = lo;
+        rangeMin.value = lo;
+        rangeMax.value = hi;
+    }
 
-categorySelect.addEventListener("change", () => {
-    state.category = categorySelect.value;
-    state.page = 1;
-    loadProducts();
-});
+    // Если ползунок стоит на краю, фильтр по этой стороне не нужен
+    state.minPrice = lo > bounds.min ? String(lo) : "";
+    state.maxPrice = hi < bounds.max ? String(hi) : "";
+    minPriceInput.value = state.minPrice;
+    maxPriceInput.value = state.maxPrice;
+    minPriceInput.classList.remove("is-invalid");
+    maxPriceInput.classList.remove("is-invalid");
 
-pagination.addEventListener("click", (e) => {
-    const btn = e.target.closest("[data-page]");
-    if (!btn) return;
-    state.page = Number(btn.dataset.page);
-    loadProducts();
-    window.scrollTo({ top: 0, behavior: "smooth" });
-});
+    updateSlider();
+    reloadFromFirstPage();
+}
+rangeMin.addEventListener("input", onSlide);
+rangeMax.addEventListener("input", onSlide);
 
 const onPriceChange = debounce(() => {
     state.minPrice = minPriceInput.value.trim();
     state.maxPrice = maxPriceInput.value.trim();
     state.page = 1;
+
+    // подтягиваем ползунки (браузер сам ограничит значение границами min/max)
+    rangeMin.value = state.minPrice !== "" ? state.minPrice : bounds.min;
+    rangeMax.value = state.maxPrice !== "" ? state.maxPrice : bounds.max;
+    updateSlider();
 
     const bad = state.minPrice !== "" && state.maxPrice !== ""
         && Number(state.minPrice) > Number(state.maxPrice);
@@ -175,8 +226,74 @@ const onPriceChange = debounce(() => {
 minPriceInput.addEventListener("input", onPriceChange);
 maxPriceInput.addEventListener("input", onPriceChange);
 
-// Три одинаковых по логике селекта: ключ состояния берём из словаря
-for (const [el, key] of [[brandSelect, "brand"], [stockSelect, "stock"], [sortSelect, "sort"]]) {
+// ---------- Справочники ----------
+// Нужны для названий в таблице и для списка категорий
+async function loadDictionaries() {
+    try {
+        const [categories, brands] = await Promise.all([api("/categories"), api("/brands")]);
+
+        categories.forEach((c) => { categoryNames[c.id] = c.name; });
+        brands.forEach((b) => { brandNames[b.id] = b.name; });
+
+        categorySelect.innerHTML += categories
+            .map((c) => `<option value="${escapeHtml(c.slug)}">${escapeHtml(c.name)}</option>`)
+            .join("");
+    }
+    catch (err) {
+        showAlert(errorText(err));
+    }
+}
+
+// Список брендов в панели зависит от категории. Выбор один (админский эндпоинт принимает один brand_id)
+async function loadBrands() {
+    const params = new URLSearchParams();
+    if (state.category) params.set("category", state.category);
+
+    try {
+        const brands = await api(`/brands?${params}`);
+        state.brand = "";
+
+        const radio = (id, value, label, checked = false) => `
+            <div class="form-check">
+              <input class="form-check-input brand-radio" type="radio" name="brand"
+                     id="${id}" value="${value}" ${checked ? "checked" : ""}>
+              <label class="form-check-label" for="${id}">${label}</label>
+            </div>`;
+
+        brandsBox.innerHTML =
+            radio("brand-all", "", "Все бренды", true) +
+            radio("brand-none", "none", "Без бренда") +
+            brands.map((b) => radio(`brand-${b.id}`, b.id, escapeHtml(b.name))).join("");
+    }
+    catch (err) {
+        showAlert(errorText(err));
+    }
+}
+
+// ---------- Обработчики ----------
+searchInput.addEventListener("input", debounce(() => {
+    state.search = searchInput.value.trim();
+    state.page = 1; // при смене фильтра всегда возвращаемся на первую страницу
+    loadProducts();
+}));
+
+categorySelect.addEventListener("change", async () => {
+    state.category = categorySelect.value;
+    state.page = 1;
+    // Бренды и границы цены зависят от категории, выбор в них сбрасывается
+    await Promise.all([loadPriceBounds(), loadBrands()]);
+    loadProducts();
+});
+
+brandsBox.addEventListener("change", (e) => {
+    if (!e.target.classList.contains("brand-radio")) return;
+    state.brand = e.target.value;
+    state.page = 1;
+    loadProducts();
+});
+
+// Одинаковые по логике селекты: ключ состояния берём из словаря
+for (const [el, key] of [[statusSelect, "is_active"], [stockSelect, "stock"], [sortSelect, "sort"]]) {
     el.addEventListener("change", () => {
         state[key] = el.value;
         state.page = 1;
@@ -190,14 +307,23 @@ discountCheck.addEventListener("change", () => {
     loadProducts();
 });
 
-resetBtn.addEventListener("click", () => {
+pagination.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-page]");
+    if (!btn) return;
+    state.page = Number(btn.dataset.page);
+    loadProducts();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+});
+
+resetBtn.addEventListener("click", async () => {
     Object.assign(state, defaultState());
-    for (const el of [searchInput, minPriceInput, maxPriceInput]) el.value = "";
-    for (const el of [statusSelect, categorySelect, brandSelect, stockSelect]) el.value = "";
+    searchInput.value = "";
+    categorySelect.value = "";
+    statusSelect.value = "";
+    stockSelect.value = "";
     sortSelect.value = state.sort;
     discountCheck.checked = false;
-    minPriceInput.classList.remove("is-invalid");
-    maxPriceInput.classList.remove("is-invalid");
+    await Promise.all([loadPriceBounds(), loadBrands()]);
     loadProducts();
 });
 
@@ -225,5 +351,6 @@ productsBody.addEventListener("click", async (e) => {
 // Сначала справочники, потом товары: иначе в первой отрисовке вместо названий будут прочерки
 (async () => {
     await loadDictionaries();
+    await Promise.all([loadBrands(), loadPriceBounds()]);
     await loadProducts();
 })();
