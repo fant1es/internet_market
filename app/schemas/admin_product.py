@@ -20,6 +20,7 @@ class ProductIn(BaseModel):
     old_price: Decimal | None = Field(None, gt=0, max_digits=10, decimal_places=2)
     stock_quantity: int = Field(0, ge=0, le=1_000_000)
     is_active: bool = True
+    option_ids: list[int] = Field(default_factory=list)
 
     @model_validator(mode="after")
     def check_old_price(self):
@@ -38,6 +39,7 @@ class ProductAdminOut(ProductOut):
     """Товар для админа (как у юзеров + служебные поля)"""
     is_active: bool
     created_at: datetime
+    option_ids: list[int] = []
 
 
 class ProductAdminListOut(BaseModel):

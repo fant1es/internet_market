@@ -10,6 +10,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     const brandSelect = document.getElementById("brand");
     const submitBtn = form.querySelector('button[type="submit"]');
 
+    const attributesBox = document.getElementById("attributes-box");
+    let attrs = null;
+
     const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
     const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
@@ -83,6 +86,11 @@ document.addEventListener("DOMContentLoaded", async () => {
         ]);
         fillSelect(categorySelect, "Выберите категорию...", categories);
         fillSelect(brandSelect, "Без бренда", brands);
+
+        // Подгрузка атрибутов
+        attrs = createAttributesEditor(attributesBox);
+        attrs.load(categorySelect.value);
+        categorySelect.addEventListener("change", () => attrs.load(categorySelect.value));
     }
     catch (err) {
         showAlert(errorText(err));
@@ -105,6 +113,11 @@ document.addEventListener("DOMContentLoaded", async () => {
             return;
         }
 
+        if (!attrs || !attrs.isReady()) {
+            showAlert("Характеристики ещё не загружены, подождите секунду", "warning");
+            return;
+        }
+
         const payload = {
             name: document.getElementById("name").value.trim(),
             sku: document.getElementById("sku").value.trim(),
@@ -115,6 +128,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             old_price: oldPrice,
             stock_quantity: Number(document.getElementById("stock_quantity").value),
             is_active: document.getElementById("is_active").checked,
+            option_ids: attrs.getSelected(),
         };
 
         submitBtn.disabled = true;   // защита от двойного клика

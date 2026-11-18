@@ -13,6 +13,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     const deleteImageBtn = document.getElementById("image-delete");
     const fileNameLabel = document.getElementById("image-file-name");
 
+    const attributesBox = document.getElementById("attributes-box");
+    let attrs = null;
+
     const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
     const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
@@ -99,6 +102,12 @@ document.addEventListener("DOMContentLoaded", async () => {
         categorySelect.value = product.category_id;
         brandSelect.value = product.brand_id ?? "";
 
+        // Подгрузка атрибутов
+        attrs = createAttributesEditor(attributesBox);
+        await attrs.load(product.category_id, product.option_ids ?? []);
+        // При смене категории старые варианты ей не принадлежат, поэтому список строится без выбора
+        categorySelect.addEventListener("change", () => attrs.load(categorySelect.value));
+
         // Текстовые поля и цены (price и old_price приходят строками, как отдаёт API)
         document.getElementById("name").value = product.name;
         document.getElementById("sku").value = product.sku;
@@ -161,6 +170,11 @@ document.addEventListener("DOMContentLoaded", async () => {
             return;
         }
 
+        if (!attrs || !attrs.isReady()) {
+            showAlert("Характеристики ещё не загружены, подождите секунду", "warning");
+            return;
+        }
+
         const payload = {
             name: document.getElementById("name").value.trim(),
             sku: document.getElementById("sku").value.trim(),
@@ -171,6 +185,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             old_price: oldPrice,
             stock_quantity: Number(document.getElementById("stock_quantity").value),
             is_active: document.getElementById("is_active").checked,
+            option_ids: attrs ? attrs.getSelected() : [],
         };
 
         submitBtn.disabled = true;   // защита от двойного клика

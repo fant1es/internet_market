@@ -8,13 +8,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.dependencies.auth import get_current_admin
-from app.models import Brand, Category, Product
+from app.models import Brand, Category, Product, Attribute, AttributeOption, ProductOption
 from app.schemas.admin_product import ActiveUpdate, ProductAdminListOut, ProductAdminOut, ProductIn
 from app.services import product_image_service
 from app.services.image_storage import MAX_IMAGE_BYTES
 from app.utils.database import get_or_404, commit_or_409
 
-LOW_STOCK = 5  # порог "мало на складе" (для фронтенда синхронизировать с admin.js)
+LOW_STOCK = 5  # порог "мало на складе"
 
 
 class AdminSort(str, Enum):
@@ -51,6 +51,41 @@ router = APIRouter(
     dependencies=[Depends(get_current_admin)], # Роутер доступен только администраторам
 )
 
+
+async def _load_options(db: AsyncSession, data: ProductIn) -> list[AttributeOption]:
+    if not data.option_ids:
+        return []
+
+    ids = set(data.option_ids)
+    rows = (await db.scalars(
+        select(AttributeOption)
+        .join(Attribute, AttributeOption.attribute_id == Attribute.id)
+        .where(AttributeOption.id.in_(ids), Attribute.category_id == data.category_id)
+    )).all()
+
+    if len(rows) != len(ids):
+        raise HTTPException(status_code=422, detail="Некорректные характеристики для выбранной категории")
+    if len({o.attribute_id for o in rows}) != len(rows):
+        raise HTTPException(status_code=422, detail="Для одной характеристики можно выбрать только один вариант")
+    return list(rows)
+
+
+def _apply_options(product: Product, options: list[AttributeOption]) -> None:
+    # attribute_id к option_id
+    wanted = {o.attribute_id: o.id for o in options}
+    current = {po.attribute_id: po for po in product.selected_options}
+
+    for attr_id, po in current.items():
+        # Сняли характеристику
+        if attr_id not in wanted:
+            product.selected_options.remove(po)
+        # Выбрали другой вариант
+        elif po.option_id != wanted[attr_id]:
+            po.option_id = wanted[attr_id]
+
+    for attr_id, option_id in wanted.items():
+        if attr_id not in current:
+            product.selected_options.append(ProductOption(attribute_id=attr_id, option_id=option_id))
 
 # noinspection PyTypeChecker
 async def _validate_refs(db: AsyncSession, data: ProductIn, product_id: int | None = None) -> None:
@@ -142,11 +177,14 @@ async def get_product(product_id: int, db: AsyncSession = Depends(get_db)):
 @router.post("", response_model=ProductAdminOut, status_code=201, summary="Создать товар")
 async def create_product(data: ProductIn, db: AsyncSession = Depends(get_db)):
     await _validate_refs(db, data)
+    options = await _load_options(db, data)
 
-    product = Product(**data.model_dump())
+    product = Product(**data.model_dump(exclude={"option_ids"}))
+    _apply_options(product, options)
     db.add(product)
-    await commit_or_409(db, message="Товар с таким артикулом уже существует")  # страховка от гонки по артикулу
-    await db.refresh(product)  # подтягиваем значения, которые проставила БД (created_at)
+    await commit_or_409(db, message="Товар с таким артикулом уже существует")
+    await db.refresh(product)
+    await db.refresh(product, ["selected_options"])  # новые ProductOption нужно подтянуть заново
     return product
 
 
@@ -154,11 +192,14 @@ async def create_product(data: ProductIn, db: AsyncSession = Depends(get_db)):
 async def update_product(product_id: int, data: ProductIn, db: AsyncSession = Depends(get_db)):
     product = await get_or_404(db, Product, product_id, message="Товар не найден")
     await _validate_refs(db, data, product_id=product_id)
+    options = await _load_options(db, data)
 
-    for field, value in data.model_dump().items():
+    for field, value in data.model_dump(exclude={"option_ids"}).items():
         setattr(product, field, value)
+    _apply_options(product, options)
 
     await commit_or_409(db, message="Товар с таким артикулом уже существует")
+    await db.refresh(product, ["selected_options"])
     return product
 
 

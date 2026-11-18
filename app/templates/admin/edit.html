@@ -106,6 +106,15 @@
 
         <div class="card shadow-sm mb-4">
           <div class="card-body">
+            <h5 class="card-title mb-3">Характеристики</h5>
+            <div id="attributes-box">
+              <p class="text-muted small mb-0">Выберите категорию, чтобы задать характеристики.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="card shadow-sm mb-4">
+          <div class="card-body">
             <h5 class="card-title mb-3">Ценообразование</h5>
 
             <div class="row g-3">
@@ -138,5 +147,6 @@
 {% endblock %}
 
 {% block scripts %}
+  <script src="/static/js/admin/admin_product_attributes.js"></script>
   <script src="/static/js/admin/admin_product_edit.js"></script>
 {% endblock %}
