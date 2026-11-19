@@ -59,7 +59,7 @@ async def admin_product_new(request: Request, user: CurrentUserOptional):
     redirect = _admin_redirect(user)
     if redirect is not None:
         return redirect
-    return templates.TemplateResponse(request, "admin/new.html")
+    return templates.TemplateResponse(request, "admin/new.html", {"user": user})
 
 
 @router.get("/admin/product/{product_id}")
@@ -83,7 +83,7 @@ async def admin_references_page(request: Request, user: CurrentUserOptional):
     redirect = _admin_redirect(user)
     if redirect is not None:
         return redirect
-    return templates.TemplateResponse(request, "admin/references.html")
+    return templates.TemplateResponse(request, "admin/references.html", {"user": user})
 
 
 @router.get("/my-cart")
