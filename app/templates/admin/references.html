@@ -78,30 +78,7 @@
     </div>
   </div>
 
-  {# Управление характеристиками категории #}
-  <div class="modal fade" id="attr-modal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-scrollable">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="attr-modal-title"></h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
-        </div>
-
-        <div class="modal-body">
-          <div id="attr-modal-error" class="alert alert-danger d-none"></div>
-          <div id="attr-list"></div>
-        </div>
-
-        <div class="modal-footer">
-          <form id="attr-add-form" class="input-group" novalidate>
-            <input type="text" id="attr-new-name" class="form-control" maxlength="100" required
-                   placeholder="Новая характеристика, например «Цвет»">
-            <button type="submit" class="btn btn-primary">+ Добавить характеристику</button>
-          </form>
-        </div>
-      </div>
-    </div>
-  </div>
+  {% include "admin/attribute_modal.html" %}
 {% endblock %}
 
 {% block scripts %}

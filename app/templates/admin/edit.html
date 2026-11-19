@@ -106,7 +106,10 @@
 
         <div class="card shadow-sm mb-4">
           <div class="card-body">
-            <h5 class="card-title mb-3">Характеристики</h5>
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h5 class="card-title mb-0">Характеристики</h5>
+              <button type="button" id="manage-attrs" class="btn btn-outline-secondary btn-sm">Управление</button>
+            </div>
             <div id="attributes-box">
               <p class="text-muted small mb-0">Выберите категорию, чтобы задать характеристики.</p>
             </div>
@@ -144,9 +147,12 @@
       </div>
     </div>
   </form>
+
+  {% include "admin/attribute_modal.html" %}
 {% endblock %}
 
 {% block scripts %}
   <script src="/static/js/admin/admin_product_attributes.js"></script>
+  <script src="/static/js/admin/admin_category_attributes.js"></script>
   <script src="/static/js/admin/admin_product_edit.js"></script>
 {% endblock %}

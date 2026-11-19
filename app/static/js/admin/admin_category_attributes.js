@@ -10,6 +10,8 @@
 
     let categoryId = null;
     let attributes = [];
+    let onClose = null;   // что сделать после закрытия окна (например, обновить форму товара)
+    let changed = false;  // менялось ли что-то, пока окно было открыто
 
     // Ошибки показываем внутри окна: общий блок #alerts закрыт затемнением
     function showError(message) {
@@ -65,6 +67,7 @@
         clearError();
         try {
             await action();
+            changed = true;
             await reload();
         }
         catch (err) {
@@ -73,9 +76,11 @@
     }
 
     // Вызывается в admin_references.js
-    window.openAttributesModal = async (category) => {
+    window.openAttributesModal = async (category, callback = null) => {
         categoryId = category.id;
         attributes = [];
+        onClose = callback;
+        changed = false;
         titleEl.textContent = `Характеристики: ${category.name}`;
         newName.value = "";
         listEl.innerHTML = `<p class="text-muted text-center py-4 mb-0">Загрузка...</p>`;
@@ -159,5 +164,10 @@
                 break;
             }
         }
+    });
+
+    // Если что-то менялось, даём странице обновить свои данные
+    modalEl.addEventListener("hidden.bs.modal", () => {
+        if (changed && onClose) onClose();
     });
 })();

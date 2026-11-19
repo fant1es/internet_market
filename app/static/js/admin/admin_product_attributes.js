@@ -1,13 +1,17 @@
-// Блок характеристик в форме товара. Список зависит от категории: при её смене перерисовывается
+// Блок характеристик в форме товара. Список зависит от категории и при её смене перерисовывается
 function createAttributesEditor(box) {
     let lastRequestId = 0; // защита от гонки при быстрой смене категории
     let ready = false;     // true, когда блок отрисован и getSelected() можно доверять
+    let lastCategoryId = null;
+    let lastSelected = []; // что выбрать при отрисовке
 
     const hint = (text) => { box.innerHTML = `<p class="text-muted small mb-0">${text}</p>`; };
 
     async function load(categoryId, selectedIds = []) {
         const requestId = ++lastRequestId;
         ready = false;
+        lastCategoryId = categoryId;
+        lastSelected = selectedIds;
 
         if (!categoryId) {
             hint("Выберите категорию, чтобы задать характеристики.");
@@ -17,11 +21,12 @@ function createAttributesEditor(box) {
 
         hint("Загрузка...");
         try {
-            const attributes = await api(`/admin/categories/${Number(categoryId)}/attributes`);
+            // Здесь отдаются все характеристики, в том числе ещё без вариантов
+            const attributes = await api(`/admin/attributes?category_id=${Number(categoryId)}`);
             if (requestId !== lastRequestId) return; // пришёл устаревший ответ
 
             if (attributes.length === 0) {
-                hint("У этой категории нет характеристик.");
+                hint("У этой категории пока нет характеристик. Добавьте их кнопкой «Управление».");
                 ready = true;
                 return;
             }
@@ -30,11 +35,15 @@ function createAttributesEditor(box) {
             box.innerHTML = `<div class="row g-3">` + attributes.map((a, i) => `
                 <div class="col-md-6">
                   <label for="attr-${i}" class="form-label">${escapeHtml(a.name)}</label>
-                  <select id="attr-${i}" class="form-select attr-select">
-                    <option value="">Не указано</option>
-                    ${a.options.map((o) => `
-                      <option value="${o.id}" ${selected.has(o.id) ? "selected" : ""}>${escapeHtml(o.value)}</option>`).join("")}
-                  </select>
+                  ${a.options.length
+                    ? `<select id="attr-${i}" class="form-select attr-select">
+                         <option value="">Не указано</option>
+                         ${a.options.map((o) => `
+                           <option value="${o.id}" ${selected.has(o.id) ? "selected" : ""}>${escapeHtml(o.value)}</option>`).join("")}
+                       </select>`
+                    : `<select id="attr-${i}" class="form-select" disabled>
+                         <option>Нет вариантов: добавьте в «Управление»</option>
+                       </select>`}
                 </div>`).join("") + `</div>`;
             ready = true;
         }
@@ -51,5 +60,12 @@ function createAttributesEditor(box) {
             .map(Number);
     }
 
-    return { load, getSelected, isReady: () => ready };
+    // Перезагружает список с сохранением текущего выбора. Удалённые варианты в списке уже не найдутся
+    // и отсеются сами. Если загрузка ещё шла, берём то, что просили показать в прошлый раз
+    function reload() {
+        const keep = ready ? getSelected() : lastSelected;
+        return load(lastCategoryId, keep);
+    }
+
+    return { load, reload, getSelected, isReady: () => ready };
 }

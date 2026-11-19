@@ -91,6 +91,16 @@ document.addEventListener("DOMContentLoaded", async () => {
         attrs = createAttributesEditor(attributesBox);
         attrs.load(categorySelect.value);
         categorySelect.addEventListener("change", () => attrs.load(categorySelect.value));
+
+        // Окно управления характеристиками: после закрытия обновляем блок, сохраняя выбор
+        document.getElementById("manage-attrs").addEventListener("click", () => {
+            if (!categorySelect.value) {
+                showAlert("Сначала выберите категорию", "warning");
+                return;
+            }
+            const name = categorySelect.selectedOptions[0].textContent.trim();
+            openAttributesModal({ id: Number(categorySelect.value), name }, () => attrs.reload());
+        });
     }
     catch (err) {
         showAlert(errorText(err));

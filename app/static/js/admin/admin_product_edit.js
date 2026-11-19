@@ -108,6 +108,16 @@ document.addEventListener("DOMContentLoaded", async () => {
         // При смене категории старые варианты ей не принадлежат, поэтому список строится без выбора
         categorySelect.addEventListener("change", () => attrs.load(categorySelect.value));
 
+        // Окно управления характеристиками: после закрытия обновляем блок, сохраняя выбор
+        document.getElementById("manage-attrs").addEventListener("click", () => {
+            if (!categorySelect.value) {
+                showAlert("Сначала выберите категорию", "warning");
+                return;
+            }
+            const name = categorySelect.selectedOptions[0].textContent.trim();
+            openAttributesModal({ id: Number(categorySelect.value), name }, () => attrs.reload());
+        });
+
         // Текстовые поля и цены (price и old_price приходят строками, как отдаёт API)
         document.getElementById("name").value = product.name;
         document.getElementById("sku").value = product.sku;
