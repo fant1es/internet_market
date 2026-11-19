@@ -70,6 +70,8 @@ function renderTable() {
         </span>
       </td>` : ""}
       <td class="text-end text-nowrap">
+        ${kind === "categories" ? `
+        <button class="btn btn-outline-dark btn-sm" data-action="attributes" data-id="${item.id}">Характеристики</button>` : ""}
         <button class="btn btn-outline-primary btn-sm" data-action="edit" data-id="${item.id}">Изменить</button>
         ${cfg.hasActive ? `
         <button class="btn btn-outline-secondary btn-sm" data-action="toggle" data-id="${item.id}">
@@ -183,6 +185,11 @@ body.addEventListener("click", async (e) => {
         return;
     }
 
+    if (btn.dataset.action === "attributes") {
+        openAttributesModal(item);
+        return;
+    }
+    
     if (btn.dataset.action === "delete" && !confirm(`Удалить «${item.name}»?`)) return;
 
     btn.disabled = true;

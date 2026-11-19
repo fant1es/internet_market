@@ -5,10 +5,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.schemas.category import FilterAttributeOut
 from app.database import get_db
 from app.dependencies.auth import get_current_admin
-from app.models import Brand, Category, Product, Attribute, AttributeOption
+from app.models import Brand, Category, Product
 from app.schemas.admin_product import ActiveUpdate
 from app.schemas.admin_reference import BrandAdminOut, BrandIn, CategoryAdminOut, CategoryIn
 from app.utils.database import commit_or_409, get_or_404
+from app.services import attribute_service
+
 
 # Отдельные админские пути
 brands_admin = APIRouter(
@@ -166,27 +168,9 @@ async def delete_category(category_id: int, db: AsyncSession = Depends(get_db)):
 
 # noinspection PyTypeChecker
 @categories_admin.get("/{category_id}/attributes", response_model=list[FilterAttributeOut],
-                      summary="Все характеристики категории и все их варианты (для формы товара)")
+                      summary="Характеристики категории с вариантами (для формы товара)")
 async def category_attributes(category_id: int, db: AsyncSession = Depends(get_db)):
-    if await db.scalar(select(Category.id).where(Category.id == category_id)) is None:
-        raise HTTPException(status_code=404, detail="Категория не найдена")
-
-    # В отличие от публичных фильтров, здесь нет отбора по использованию в товарах:
-    # в форме нужны все варианты, в том числе ещё ни разу не выбранные
-    rows = await db.execute(
-        select(Attribute, AttributeOption)
-        .join(AttributeOption, AttributeOption.attribute_id == Attribute.id)
-        .where(Attribute.category_id == category_id)
-        .order_by(Attribute.position, Attribute.id, AttributeOption.position, AttributeOption.id)
-    )
-
-    attributes: dict[int, dict] = {}
-    for attribute, option in rows:
-        item = attributes.setdefault(
-            attribute.id,
-            {"id": attribute.id, "name": attribute.name, "slug": attribute.slug, "options": []},
-        )
-        item["options"].append({"id": option.id, "value": option.value})
-
-    return list(attributes.values())
+    attributes = await attribute_service.list_attributes(db, category_id)
+    # Если характеристика без вариантов, то выбирать нечем
+    return [a for a in attributes if a["options"]]
 # endregion
