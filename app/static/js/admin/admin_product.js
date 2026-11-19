@@ -2,9 +2,10 @@ const card = document.getElementById("product-card");
 // id товара пришёл из роута через data-атрибут (см. admin/product.html)
 const productId = card.dataset.id;
 
-// Названия категории и бренда нужны при каждой перерисовке (например, после скрытия товара)
+// Названия категории, бренда и характеристики нужны при каждой перерисовке (например, после скрытия товара)
 let categoryName = "—";
 let brandName = "—";
+let attributes = [];
 
 function renderCard(p) {
     const img = productImageUrl(p);
@@ -54,17 +55,20 @@ function renderCard(p) {
             </button>
           </div>
         </div>
-      </div>`;
+      </div>
+      ${renderAttributes(attributes)}`;
 }
 
 async function loadProduct() {
     try {
-        const [product, categories, brands] = await Promise.all([
+        const [product, categories, brands, attrs] = await Promise.all([
             api(`/admin/products/${productId}`),
             api("/categories"),
             api("/brands"),
+            api(`/admin/products/${productId}/attributes`)
         ]);
 
+        attributes = attrs;
         categoryName = categories.find((c) => c.id === product.category_id)?.name ?? "—";
         brandName = product.brand_id
             ? (brands.find((b) => b.id === product.brand_id)?.name ?? "—")

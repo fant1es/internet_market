@@ -11,6 +11,7 @@ from app.database import get_db
 from app.models import Attribute, AttributeOption, Brand, Category, Product, ProductOption
 from app.schemas.attribute import ProductAttributeOut
 from app.schemas.product import ProductListOut, ProductOut, PriceRangeOut
+from app.services.product_attributes_service import fetch_product_attributes
 
 router = APIRouter(prefix="/products", tags=["products"])
 
@@ -167,12 +168,4 @@ async def get_product_attributes(product_id: int, db: AsyncSession = Depends(get
     if exists_ is None:
         raise HTTPException(status_code=404, detail="Товар не найден")
 
-    rows = await db.execute(
-        select(Attribute.name, AttributeOption.value)
-        .select_from(ProductOption)
-        .join(Attribute, Attribute.id == ProductOption.attribute_id)
-        .join(AttributeOption, AttributeOption.id == ProductOption.option_id)
-        .where(ProductOption.product_id == product_id)
-        .order_by(Attribute.position, Attribute.id)
-    )
-    return [{"name": name, "value": value} for name, value in rows.all()]
+    return await fetch_product_attributes(db, product_id)

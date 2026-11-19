@@ -13,6 +13,8 @@ from app.schemas.admin_product import ActiveUpdate, ProductAdminListOut, Product
 from app.services import product_image_service
 from app.services.image_storage import MAX_IMAGE_BYTES
 from app.utils.database import get_or_404, commit_or_409
+from app.schemas.attribute import ProductAttributeOut
+from app.services.product_attributes_service import fetch_product_attributes
 
 LOW_STOCK = 5  # порог "мало на складе"
 
@@ -172,6 +174,12 @@ async def list_products(
 @router.get("/{product_id}", response_model=ProductAdminOut, summary="Товар для редактирования")
 async def get_product(product_id: int, db: AsyncSession = Depends(get_db)):
     return await get_or_404(db, Product, product_id, message="Товар не найден")
+
+
+@router.get("/{product_id}/attributes", response_model=list[ProductAttributeOut], summary="Характеристики товара")
+async def get_product_attributes(product_id: int, db: AsyncSession = Depends(get_db)):
+    await get_or_404(db, Product, product_id, message="Товар не найден")
+    return await fetch_product_attributes(db, product_id)
 
 
 @router.post("", response_model=ProductAdminOut, status_code=201, summary="Создать товар")
