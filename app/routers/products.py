@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models import Attribute, AttributeOption, Brand, Category, Product, ProductOption
+from app.schemas.attribute import ProductAttributeOut
 from app.schemas.product import ProductListOut, ProductOut, PriceRangeOut
 
 router = APIRouter(prefix="/products", tags=["products"])
@@ -155,3 +156,23 @@ async def get_product(product_id: int, db: AsyncSession = Depends(get_db)):
     if product is None:
         raise HTTPException(status_code=404, detail="Товар не найден")
     return product
+
+
+# noinspection PyTypeChecker
+@router.get("/{product_id}/attributes", response_model=list[ProductAttributeOut],
+            summary="Характеристики товара")
+async def get_product_attributes(product_id: int, db: AsyncSession = Depends(get_db)):
+    # Сначала убеждаемся, что товар существует и виден публично (активен, категория активна)
+    exists_ = await db.scalar(_public_products().where(Product.id == product_id).with_only_columns(Product.id))
+    if exists_ is None:
+        raise HTTPException(status_code=404, detail="Товар не найден")
+
+    rows = await db.execute(
+        select(Attribute.name, AttributeOption.value)
+        .select_from(ProductOption)
+        .join(Attribute, Attribute.id == ProductOption.attribute_id)
+        .join(AttributeOption, AttributeOption.id == ProductOption.option_id)
+        .where(ProductOption.product_id == product_id)
+        .order_by(Attribute.position, Attribute.id)
+    )
+    return [{"name": name, "value": value} for name, value in rows.all()]

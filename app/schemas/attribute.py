@@ -27,5 +27,10 @@ class AttributeOut(BaseModel):
     products_count: int  # у скольких товаров задана эта характеристика
 
 
+class ProductAttributeOut(BaseModel):
+    name: str
+    value: str
+
+
 class AttributeAdminOut(AttributeOut):
     options: list[OptionAdminOut]

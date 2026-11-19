@@ -5,7 +5,23 @@ const productId = productBox.dataset.id;
 let categoryName = "—";
 let brandName = "—";
 
-function renderProduct(p) {
+function renderAttributes(attrs) {
+    if (!attrs.length) return "";   // Если у товара нет характеристик, то блок не показываем
+
+    const rows = attrs.map((a) => `
+        <div class="row py-2 border-bottom">
+          <div class="col-sm-6 col-md-5">${escapeHtml(a.name)}</div>
+          <div class="col-sm-6 col-md-7 fw-bold">${escapeHtml(a.value)}</div>
+        </div>`).join("");
+
+    return `
+      <section class="mt-5">
+        <h2 class="h4 mb-3">Характеристики</h2>
+        ${rows}
+      </section>`;
+}
+
+function renderProduct(p, attrs) {
     const img = productImageUrl(p);
     const inStock = p.stock_quantity > 0;
 
@@ -47,17 +63,19 @@ function renderProduct(p) {
             ? `<button class="btn btn-primary add-to-cart" data-id="${p.id}">В корзину</button>`
             : `<button class="btn btn-secondary" disabled>Нет в наличии</button>`}
         </div>
-      </div>`;
+      </div>
+      ${renderAttributes(attrs)}`;
 
     syncCartButtons();
 }
 
 async function loadProduct() {
     try {
-        const [product, categories, brands] = await Promise.all([
+        const [product, categories, brands, attrs] = await Promise.all([
             api(`/products/${productId}`),
             api("/categories"),
             api("/brands"),
+            api(`/products/${productId}/attributes`)
         ]);
 
         categoryName = categories.find((c) => c.id === product.category_id)?.name ?? "—";
@@ -65,7 +83,7 @@ async function loadProduct() {
             ? (brands.find((b) => b.id === product.brand_id)?.name ?? "—")
             : "—";
 
-        renderProduct(product);
+        renderProduct(product, attrs);
     }
     catch (err) {
         if (err.status === 404) {
