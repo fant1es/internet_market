@@ -32,6 +32,14 @@ class Product(Base):
         lazy="selectin",
     )
 
+
+    reviews = relationship(
+        "Review",
+        back_populates="product",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+
     @property
     def option_ids(self) -> list[int]:
         return [po.option_id for po in self.selected_options]

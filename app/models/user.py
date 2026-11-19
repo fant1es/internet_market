@@ -4,6 +4,7 @@ from enum import Enum
 
 from sqlalchemy import Column, Integer, String, Enum as SQLEnum, Boolean, DateTime, func, DECIMAL, CheckConstraint, \
     text, Text
+from sqlalchemy.orm import relationship
 
 from app.database import Base
 
@@ -36,6 +37,13 @@ class User(Base):
 
     # При обновлении пароля меняем версию токена 
     token_version = Column(Integer, nullable=False, default=0, server_default=text("0"))
+
+    reviews = relationship(
+        "Review",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
 
     __table_args__ = (
         CheckConstraint("balance >= 0", name="ck_users_balance_nonneg"),
