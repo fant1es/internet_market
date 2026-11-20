@@ -1,6 +1,6 @@
 from datetime import datetime
 from decimal import Decimal
-from typing import Annotated
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, PlainSerializer, field_validator
 
@@ -74,3 +74,8 @@ class ReviewListOut(BaseModel):
     page_size: int
     pages: int
     summary: ReviewSummary
+
+
+class CanReviewOut(BaseModel):
+    can_review: bool
+    reason: Literal["already_reviewed", "not_purchased"] | None = None

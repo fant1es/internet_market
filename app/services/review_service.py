@@ -1,16 +1,60 @@
 import math
 
 from fastapi import HTTPException, status
-from sqlalchemy import func, select
+from sqlalchemy import func, select, exists
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.models import Product, Review, User, Category
+from app.models import Product, Review, User, Category, OrderItem, Order
+from app.models.order import OrderStatus
 from app.models.user import UserRole
 from app.schemas.review import ReviewCreate, ReviewUpdate
 from app.utils.database import commit_or_409, get_or_404, run_in_transaction
 
 
+# Покупкой считается оплаченный и выполненный
+PURCHASED_STATUSES = (OrderStatus.PAID, OrderStatus.COMPLETED)
+
+
+# noinspection PyTypeChecker
+async def _has_purchased(db: AsyncSession, user_id: int, product_id: int) -> bool:
+    return await db.scalar(
+        select(
+            exists().where(
+                Order.user_id == user_id,
+                Order.status.in_(PURCHASED_STATUSES),
+                OrderItem.order_id == Order.id,
+                OrderItem.product_id == product_id,
+            )
+        )
+    )
+
+
+async def _ensure_purchased(db: AsyncSession, user_id: int, product_id: int) -> None:
+    """Отзыв можно оставить только на товар из оплаченного заказа."""
+    if not await _has_purchased(db, user_id, product_id):
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            "Оставлять отзывы могут только покупатели этого товара",
+        )
+
+
+# noinspection PyTypeChecker
+async def can_review(db: AsyncSession, product_id: int, user: User) -> dict:
+    await _ensure_active_product(db, product_id)
+
+    already = await db.scalar(
+        select(exists().where(Review.user_id == user.id, Review.product_id == product_id))
+    )
+    if already:
+        return {"can_review": False, "reason": "already_reviewed"}
+    if not await _has_purchased(db, user.id, product_id):
+        return {"can_review": False, "reason": "not_purchased"}
+
+    return {"can_review": True, "reason": None}
+
+
+# noinspection PyTypeChecker
 async def _ensure_active_product(db: AsyncSession, product_id: int) -> None:
     found = await db.scalar(
         select(Product.id)
@@ -71,6 +115,7 @@ async def list_reviews(db: AsyncSession, product_id: int, page: int, page_size: 
 
 async def create_review(db: AsyncSession, product_id: int, user: User, data: ReviewCreate) -> Review:
     await _ensure_active_product(db, product_id)
+    await _ensure_purchased(db, user.id, product_id)
 
     review = Review(**data.model_dump(), user_id=user.id, product_id=product_id)
     db.add(review)

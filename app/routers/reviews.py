@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.dependencies.auth import get_current_user
 from app.models import User
-from app.schemas.review import ReviewCreate, ReviewListOut, ReviewOut, ReviewUpdate
+from app.schemas.review import ReviewCreate, ReviewListOut, ReviewOut, ReviewUpdate, CanReviewOut
 from app.services import review_service
 
 product_reviews_router = APIRouter(prefix="/products/{product_id}/reviews", tags=["reviews"])
@@ -23,6 +23,13 @@ async def list_reviews(product_id: int, page: int = Query(1, ge=1),
 async def create_review(product_id: int, data: ReviewCreate, db: AsyncSession = Depends(get_db),
                         user: User = Depends(get_current_user)):
     return await review_service.create_review(db, product_id, user, data)
+
+
+@product_reviews_router.get("/can-review", response_model=CanReviewOut,
+                            summary="Может ли текущий пользователь оставить отзыв")
+async def can_review(product_id: int, db: AsyncSession = Depends(get_db),
+                     user: User = Depends(get_current_user)):
+    return await review_service.can_review(db, product_id, user)
 
 
 @review_router.patch("/{review_id}", response_model=ReviewOut, summary="Изменить свой отзыв")
