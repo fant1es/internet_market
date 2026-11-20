@@ -9,8 +9,15 @@
   <div id="product" data-id="{{ product_id }}">
     <div class="text-muted">Загрузка...</div>
   </div>
+
+  {# Содержимое рисует reviews.js #}
+  <section id="reviews" class="mt-5"
+           data-product-id="{{ product_id }}"
+           data-user-id="{{ user.id if user else '' }}"
+           data-is-admin="{{ 'true' if user and user.role.value == 'admin' else 'false' }}"></section>
 {% endblock %}
 
 {% block scripts %}
   <script src="/static/js/product.js"></script>
+  <script src="/static/js/reviews.js"></script>
 {% endblock %}
