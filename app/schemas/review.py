@@ -70,4 +70,7 @@ class ReviewSummary(BaseModel):
 class ReviewListOut(BaseModel):
     items: list[ReviewOut]
     total: int
+    page: int
+    page_size: int
+    pages: int
     summary: ReviewSummary
