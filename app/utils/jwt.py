@@ -2,6 +2,7 @@ from datetime import datetime, timedelta, timezone
 
 from fastapi import HTTPException
 from jose import jwt, ExpiredSignatureError, JWTError
+from loguru import logger
 
 from app.config import settings
 
@@ -19,7 +20,11 @@ def decode_access_token(token: str) -> dict:
     try:
         payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
     except ExpiredSignatureError:
+        logger.debug("Токен отклонён | причина=истёк срок действия")
         raise HTTPException(status_code=401, detail="Токен истёк, войдите заново")
-    except JWTError:
+    except JWTError as e:
+        # Неверная подпись или повреждённый токен сам не получается, поэтому WARNING
+        # Токен в лог не пишем
+        logger.warning("Токен отклонён | причина=невалидный токен ({})", e)
         raise HTTPException(status_code=401, detail="Невалидный токен")
     return payload
