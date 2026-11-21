@@ -28,7 +28,7 @@ def setup_logging(level: str = "INFO") -> None:
     # Общий лог, 14 дней
     logger.add(LOG_DIR / "app" / "app_{time:YYYY-MM-DD}.log",
                level="INFO", format=FILE_FORMAT, encoding="utf-8",
-               rotation="00:00", retention="14 days", compression="zip",
+               rotation="00:00", diagnose=False, retention="14 days", compression="zip",
                enqueue=True) # запись идёт через очередь, поэтому логирование не блокирует async-код
 
     # Ошибки, 30 дней
@@ -42,7 +42,7 @@ def setup_logging(level: str = "INFO") -> None:
     logger.add(LOG_DIR / "audit" / "audit_{time:YYYY-MM-DD}.log",
                level="INFO", format=FILE_FORMAT, encoding="utf-8",
                filter=lambda r: r["extra"].get("channel") == "audit",
-               rotation="00:00", retention="180 days", compression="zip",
+               rotation="00:00", diagnose=False, retention="180 days", compression="zip",
                enqueue=True)
 
     _intercept_standard_logging()
