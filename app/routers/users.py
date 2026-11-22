@@ -1,8 +1,8 @@
-import logging
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Response
 from fastapi.background import BackgroundTasks
+from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -11,7 +11,8 @@ from app.schemas.auth import UserOut, UserUpdate, ChangePasswordSchema, ChangeEm
 from app.services import user_service, email_templates, email_service
 from app.utils.auth_cookie import set_auth_cookie
 
-logger = logging.getLogger(__name__)
+# Канал аудита: попадает и в app.log, и в audit.log
+audit = logger.bind(channel="audit")
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -44,5 +45,6 @@ async def request_email_change(data: ChangeEmailSchema, user: CurrentUser,
     background_tasks.add_task(email_service.send_email, user.email, notice.subject,
                               notice.text, notice.html)
 
-    logger.info("Запрошена смена почты: user_id=%s", user.id)
+    # Письма только поставлены в очередь: об их доставке напишет email_service
+    audit.info("Запрошена смена почты, письма поставлены в очередь | user_id={}", user.id)
     return {"detail": "Письмо cо ссылкой отправлено на новый адрес"}

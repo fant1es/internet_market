@@ -1,8 +1,7 @@
-from urllib import response
-
 from fastapi import APIRouter, Request
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import RedirectResponse
+from loguru import logger
 
 from app.dependencies.auth import CurrentUserOptional
 from app.models.user import UserRole
@@ -42,6 +41,8 @@ def _admin_redirect(user) -> RedirectResponse | None:
     if user is None:
         return RedirectResponse("/login")
     if user.role != UserRole.ADMIN:
+        # Через интерфейс обычному пользователю ссылки на админку не видны, значит, зашёл вручную
+        logger.warning("Отказ в доступе к админ-странице | user_id={}", user.id)
         return RedirectResponse("/")
     return None
 
