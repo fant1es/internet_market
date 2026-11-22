@@ -1,3 +1,4 @@
+import inspect
 import logging
 import sys
 from pathlib import Path
@@ -56,9 +57,10 @@ class InterceptHandler(logging.Handler):
             level = logger.level(record.levelname).name
         except ValueError:
             level = record.levelno
-        frame, depth = logging.currentframe(), 2
-        while frame and frame.f_code.co_filename == logging.__file__:
-            frame, depth = frame.f_back, depth + 1
+        frame, depth = inspect.currentframe(), 0
+        while frame and (depth == 0 or frame.f_code.co_filename == logging.__file__):
+            frame = frame.f_back
+            depth += 1
         logger.opt(depth=depth, exception=record.exc_info).log(
             level, record.getMessage()
         )
@@ -70,3 +72,7 @@ def _intercept_standard_logging() -> None:
         lg = logging.getLogger(name)
         lg.handlers = [InterceptHandler()]
         lg.propagate = False
+
+    # Не даем библиотекам засорять лишними данными логи в app
+    for name in ("sqlalchemy.engine", "weasyprint", "fontTools"):
+        logging.getLogger(name).setLevel(logging.WARNING)

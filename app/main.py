@@ -6,6 +6,7 @@ from app.routers import admin_references, admin_products
 from app.routers import reviews
 from app.routers.auth import auth_router
 from app.routers import users
+from app.logging_setup import setup_logging
 
 app = FastAPI()
 app.include_router(auth_router)
@@ -25,6 +26,8 @@ app.include_router(admin_attributes.router)
 app.include_router(reviews.review_router)
 app.include_router(reviews.product_reviews_router)
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
+
+setup_logging()
 
 @app.get("/health")
 def health():
