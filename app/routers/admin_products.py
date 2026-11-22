@@ -1,109 +1,21 @@
 from decimal import Decimal
-from enum import Enum
-import math
 
-from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
-from sqlalchemy import func, or_, select
+from fastapi import APIRouter, Depends, File, Query, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.dependencies.auth import get_current_admin
-from app.models import Brand, Category, Product, Attribute, AttributeOption, ProductOption
+from app.dependencies.auth import CurrentAdmin, get_current_admin
 from app.schemas.admin_product import ActiveUpdate, ProductAdminListOut, ProductAdminOut, ProductIn
-from app.services import product_image_service
-from app.services.image_storage import MAX_IMAGE_BYTES
-from app.utils.database import get_or_404, commit_or_409
 from app.schemas.attribute import ProductAttributeOut
-from app.services.product_attributes_service import fetch_product_attributes
-
-LOW_STOCK = 5  # порог "мало на складе"
-
-
-class AdminSort(str, Enum):
-    id_asc = "id_asc"
-    newest = "newest"
-    price_asc = "price_asc"
-    price_desc = "price_desc"
-    stock_asc = "stock_asc"
-    stock_desc = "stock_desc"
-    name = "name"
-
-
-class StockFilter(str, Enum):
-    in_stock = "in_stock"
-    low = "low"
-    out = "out"
-
-
-# Первым ключом основное сравнение, вторым - всегда id, чтобы порядок между страницами был стабильным.
-ORDER_BY = {
-    AdminSort.id_asc: (Product.id.asc(),),
-    AdminSort.newest: (Product.created_at.desc(), Product.id.desc()),
-    AdminSort.price_asc: (Product.price.asc(), Product.id.asc()),
-    AdminSort.price_desc: (Product.price.desc(), Product.id.desc()),
-    AdminSort.stock_asc: (Product.stock_quantity.asc(), Product.id.asc()),
-    AdminSort.stock_desc: (Product.stock_quantity.desc(), Product.id.desc()),
-    AdminSort.name: (Product.name.asc(), Product.id.asc()),
-}
-
+from app.services import admin_product_service, product_image_service
+from app.services.admin_product_service import AdminSort, StockFilter
+from app.services.image_storage import MAX_IMAGE_BYTES
 
 router = APIRouter(
     prefix="/admin/products",
     tags=["admin: products"],
     dependencies=[Depends(get_current_admin)], # Роутер доступен только администраторам
 )
-
-
-async def _load_options(db: AsyncSession, data: ProductIn) -> list[AttributeOption]:
-    if not data.option_ids:
-        return []
-
-    ids = set(data.option_ids)
-    rows = (await db.scalars(
-        select(AttributeOption)
-        .join(Attribute, AttributeOption.attribute_id == Attribute.id)
-        .where(AttributeOption.id.in_(ids), Attribute.category_id == data.category_id)
-    )).all()
-
-    if len(rows) != len(ids):
-        raise HTTPException(status_code=422, detail="Некорректные характеристики для выбранной категории")
-    if len({o.attribute_id for o in rows}) != len(rows):
-        raise HTTPException(status_code=422, detail="Для одной характеристики можно выбрать только один вариант")
-    return list(rows)
-
-
-def _apply_options(product: Product, options: list[AttributeOption]) -> None:
-    # attribute_id к option_id
-    wanted = {o.attribute_id: o.id for o in options}
-    current = {po.attribute_id: po for po in product.selected_options}
-
-    for attr_id, po in current.items():
-        # Сняли характеристику
-        if attr_id not in wanted:
-            product.selected_options.remove(po)
-        # Выбрали другой вариант
-        elif po.option_id != wanted[attr_id]:
-            po.option_id = wanted[attr_id]
-
-    for attr_id, option_id in wanted.items():
-        if attr_id not in current:
-            product.selected_options.append(ProductOption(attribute_id=attr_id, option_id=option_id))
-
-# noinspection PyTypeChecker
-async def _validate_refs(db: AsyncSession, data: ProductIn, product_id: int | None = None) -> None:
-    """Проверяет, что категория и бренд существуют, а артикул не занят другим товаром."""
-    if await db.scalar(select(Category.id).where(Category.id == data.category_id)) is None:
-        raise HTTPException(status_code=422, detail="Категория не найдена")
-
-    if data.brand_id is not None:
-        if await db.scalar(select(Brand.id).where(Brand.id == data.brand_id)) is None:
-            raise HTTPException(status_code=422, detail="Бренд не найден")
-
-    sku_stmt = select(Product.id).where(Product.sku == data.sku)
-    if product_id is not None:
-        sku_stmt = sku_stmt.where(Product.id != product_id)  # Свой же артикул при редактировании доступен
-    if await db.scalar(sku_stmt) is not None:
-        raise HTTPException(status_code=409, detail="Товар с таким артикулом уже существует")
 
 
 # noinspection PyTypeChecker
@@ -123,112 +35,50 @@ async def list_products(
         page_size: int = Query(20, ge=1, le=100),
         db: AsyncSession = Depends(get_db),
 ):
-    if min_price is not None and max_price is not None and min_price > max_price:
-        raise HTTPException(status_code=422, detail="Минимальная цена не может быть больше максимальной")
-
-    stmt = select(Product)
-
-    if category:
-        stmt = stmt.join(Category, Product.category_id == Category.id).where(Category.slug == category)
-    if search and search.strip():
-        stmt = stmt.where(or_(Product.name.ilike(f"%{search.strip()}%"),
-                              Product.sku.ilike(f"%{search.strip()}%")))
-    if is_active is not None:
-        stmt = stmt.where(Product.is_active.is_(is_active))
-
-    # Бренд фильтруем по brand_id напрямую, JOIN не нужен
-    if without_brand:
-        stmt = stmt.where(Product.brand_id.is_(None))
-    elif brand_id is not None:
-        stmt = stmt.where(Product.brand_id == brand_id)
-
-    if min_price is not None:
-        stmt = stmt.where(Product.price >= min_price)
-    if max_price is not None:
-        stmt = stmt.where(Product.price <= max_price)
-    if has_discount:
-        stmt = stmt.where(Product.old_price.is_not(None), Product.old_price > Product.price)
-
-    if stock == StockFilter.in_stock:
-        stmt = stmt.where(Product.stock_quantity > 0)
-    elif stock == StockFilter.low:
-        stmt = stmt.where(Product.stock_quantity > 0, Product.stock_quantity <= LOW_STOCK)
-    elif stock == StockFilter.out:
-        stmt = stmt.where(Product.stock_quantity == 0)
-
-    total = await db.scalar(select(func.count()).select_from(stmt.subquery()))
-
-    result = await db.scalars(
-        stmt.order_by(*ORDER_BY[sort]).offset((page - 1) * page_size).limit(page_size)
+    return await admin_product_service.list_products(
+        db, search=search, category=category, is_active=is_active, brand_id=brand_id,
+        without_brand=without_brand, min_price=min_price, max_price=max_price,
+        has_discount=has_discount, stock=stock, sort=sort, page=page, page_size=page_size,
     )
-
-    return {
-        "items": result.all(),
-        "total": total,
-        "page": page,
-        "page_size": page_size,
-        "pages": math.ceil(total / page_size),
-    }
 
 
 @router.get("/{product_id}", response_model=ProductAdminOut, summary="Товар для редактирования")
 async def get_product(product_id: int, db: AsyncSession = Depends(get_db)):
-    return await get_or_404(db, Product, product_id, message="Товар не найден")
+    return await admin_product_service.get_product(db, product_id)
 
 
 @router.get("/{product_id}/attributes", response_model=list[ProductAttributeOut], summary="Характеристики товара")
 async def get_product_attributes(product_id: int, db: AsyncSession = Depends(get_db)):
-    await get_or_404(db, Product, product_id, message="Товар не найден")
-    return await fetch_product_attributes(db, product_id)
+    return await admin_product_service.get_product_attributes(db, product_id)
 
 
 @router.post("", response_model=ProductAdminOut, status_code=201, summary="Создать товар")
-async def create_product(data: ProductIn, db: AsyncSession = Depends(get_db)):
-    await _validate_refs(db, data)
-    options = await _load_options(db, data)
-
-    product = Product(**data.model_dump(exclude={"option_ids"}))
-    _apply_options(product, options)
-    db.add(product)
-    await commit_or_409(db, message="Товар с таким артикулом уже существует")
-    await db.refresh(product)
-    await db.refresh(product, ["selected_options"])  # новые ProductOption нужно подтянуть заново
-    return product
+async def create_product(data: ProductIn, admin: CurrentAdmin, db: AsyncSession = Depends(get_db)):
+    return await admin_product_service.create_product(db, data, actor_id=admin.id)
 
 
 @router.put("/{product_id}", response_model=ProductAdminOut, summary="Обновить товар целиком")
-async def update_product(product_id: int, data: ProductIn, db: AsyncSession = Depends(get_db)):
-    product = await get_or_404(db, Product, product_id, message="Товар не найден")
-    await _validate_refs(db, data, product_id=product_id)
-    options = await _load_options(db, data)
-
-    for field, value in data.model_dump(exclude={"option_ids"}).items():
-        setattr(product, field, value)
-    _apply_options(product, options)
-
-    await commit_or_409(db, message="Товар с таким артикулом уже существует")
-    await db.refresh(product, ["selected_options"])
-    return product
+async def update_product(product_id: int, data: ProductIn, admin: CurrentAdmin,
+                         db: AsyncSession = Depends(get_db)):
+    return await admin_product_service.update_product(db, product_id, data, actor_id=admin.id)
 
 
 @router.patch("/{product_id}/active", response_model=ProductAdminOut, summary="Скрыть или показать товар")
-async def set_product_active(product_id: int, data: ActiveUpdate, db: AsyncSession = Depends(get_db)):
-    # Изменение is_active работает как мягкое удаление
-    product = await get_or_404(db, Product, product_id, message="Товар не найден")
-    product.is_active = data.is_active
-    await commit_or_409(db, message="Товар с таким артикулом уже существует")
-    return product
+async def set_product_active(product_id: int, data: ActiveUpdate, admin: CurrentAdmin,
+                             db: AsyncSession = Depends(get_db)):
+    return await admin_product_service.set_product_active(db, product_id, data.is_active, actor_id=admin.id)
 
 
 @router.post("/{product_id}/image", response_model=ProductAdminOut, summary="Загрузить изображение товара")
-async def upload_product_image(product_id: int, file: UploadFile = File(...), db: AsyncSession = Depends(get_db)):
-    product = await get_or_404(db, Product, product_id, message="Товар не найден")
+async def upload_product_image(product_id: int, admin: CurrentAdmin, file: UploadFile = File(...),
+                               db: AsyncSession = Depends(get_db)):
+    product = await admin_product_service.get_product(db, product_id)
     # Читаем на 1 байт больше лимита: так видно превышение, не загружая в память файл любого размера
     data = await file.read(MAX_IMAGE_BYTES + 1)
-    return await product_image_service.set_image(db, product, data)
+    return await product_image_service.set_image(db, product, data, actor_id=admin.id)
 
 
 @router.delete("/{product_id}/image", response_model=ProductAdminOut, summary="Удалить изображение товара")
-async def delete_image(product_id: int, db: AsyncSession = Depends(get_db)):
-    product = await get_or_404(db, Product, product_id, message="Товар не найден")
-    return await product_image_service.clear_image(db, product)
+async def delete_image(product_id: int, admin: CurrentAdmin, db: AsyncSession = Depends(get_db)):
+    product = await admin_product_service.get_product(db, product_id)
+    return await product_image_service.clear_image(db, product, actor_id=admin.id)
