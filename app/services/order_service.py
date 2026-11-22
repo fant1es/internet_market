@@ -7,9 +7,10 @@ from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.models import Brand, Cart, CartItem, Order, OrderItem, Product
+from app.models import Brand, Cart, CartItem, Order, OrderItem, Product, User
 from app.models.balance_transaction import TransactionType
 from app.models.order import OrderStatus
+from app.models.user import UserRole
 from app.services.balance_service import apply_balance_change
 from app.utils.database import run_in_transaction
 
@@ -180,6 +181,26 @@ async def get_order(db: AsyncSession, order_id: int, user_id: int | None = None)
         query = query.where(Order.user_id == user_id)
 
     return await db.scalar(query)
+
+
+async def get_receipt_order(db: AsyncSession, order_id: int, user: User) -> Order:
+    """Заказ для чека: админ видит любой, остальные только свои, и только оплаченные."""
+    is_admin = user.role == UserRole.ADMIN
+    order = await get_order(db, order_id, None if is_admin else user.id)
+
+    if order is None:
+        # Несуществующий или чужой заказ: через интерфейс сюда не попасть, значит, перебор id
+        logger.warning("Чек не найден или чужой | order_id={} user_id={}", order_id, user.id)
+        raise HTTPException(404, "Чек не найден")
+    if order.status not in (OrderStatus.PAID, OrderStatus.COMPLETED):
+        logger.debug("Чек недоступен | причина=статус заказа order_id={} статус={}",
+                     order_id, getattr(order.status, "value", order.status))
+        raise HTTPException(404, "Чек не найден")
+    if is_admin and order.user_id != user.id:
+        # В чеке адрес и телефон покупателя: просмотр админом фиксируем
+        audit.info("Админ открыл чужой чек | order_id={} admin_id={} владелец_id={}",
+                   order_id, user.id, order.user_id)
+    return order
 
 
 # noinspection PyTypeChecker
