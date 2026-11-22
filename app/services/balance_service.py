@@ -1,12 +1,15 @@
 from decimal import Decimal
 
 from fastapi import HTTPException
+from loguru import logger
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import BalanceTransaction, User
 from app.models.balance_transaction import TransactionType
 from app.utils.database import run_in_transaction
+
+audit = logger.bind(channel="audit")
 
 # Предел колонки DECIMAL(10, 2)
 MAX_BALANCE = Decimal("99999999.99")
@@ -35,9 +38,13 @@ async def apply_balance_change(
     new_balance = user.balance + amount
 
     if new_balance < 0:
+        logger.warning("Недостаточно средств | user_id={} order_id={} сумма={} баланс={}",
+                       user_id, order_id, -amount, user.balance)
         raise HTTPException(402, "Недостаточно средств на балансе")
     # Лимит проверяем только для пополнения, чтобы не падало из-за возврата оплаченного заказа
     if type_ == TransactionType.TOPUP and new_balance > MAX_BALANCE:
+        logger.warning("Пополнение отклонено | причина=превышен лимит баланса user_id={} сумма={} баланс={}",
+                       user_id, amount, user.balance)
         raise HTTPException(409, "Превышен максимально допустимый баланс")
 
     user.balance = new_balance
@@ -54,4 +61,5 @@ async def topup(db: AsyncSession, user_id: int, amount: Decimal) -> Decimal:
     await run_in_transaction(db, _topup, user_id, amount)
     user = await db.get(User, user_id)
     await db.refresh(user)
+    audit.info("Баланс пополнен | user_id={} сумма={} новый_баланс={}", user_id, amount, user.balance)
     return user.balance

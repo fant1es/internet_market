@@ -2,6 +2,7 @@ import io
 import uuid
 from pathlib import Path
 
+from loguru import logger
 from PIL import Image, ImageOps, UnidentifiedImageError
 
 # Папка app/static считается от файла модуля
@@ -54,5 +55,11 @@ def delete_product_image(rel_path: str | None) -> None:
         return
     path = (STATIC_DIR / rel_path).resolve()
     # Проверка на то, что путь остается внутри нашей папки
-    if PRODUCTS_DIR.resolve() in path.parents:
+    if PRODUCTS_DIR.resolve() not in path.parents:
+        logger.warning("Удаление файла вне папки изображений отклонено | путь={}", rel_path)
+        return
+    try:
         path.unlink(missing_ok=True)
+    except OSError as e:
+        # Файл-сирота не должен вызывать 500, т.к. путь в БД к файлу уже будет обновлён
+        logger.warning("Не удалось удалить файл изображения | путь={} ошибка={}", rel_path, e)

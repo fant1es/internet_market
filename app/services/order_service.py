@@ -2,6 +2,7 @@ from decimal import Decimal
 from typing import Any
 
 from fastapi import HTTPException
+from loguru import logger
 from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -12,12 +13,15 @@ from app.models.order import OrderStatus
 from app.services.balance_service import apply_balance_change
 from app.utils.database import run_in_transaction
 
+audit = logger.bind(channel="audit")
+
 
 async def _create(db: AsyncSession, user_id: int, shipping_address: str,
                   contact_phone: str) -> int:
     # Блокируем корзину с помощью with_for_update() для защиты от двух одновременных запросов
     cart = await db.scalar(select(Cart).where(Cart.user_id == user_id).with_for_update())
     if cart is None:
+        logger.debug("Заказ не создан | причина=корзина пуста user_id={}", user_id)
         raise HTTPException(400, "Корзина пуста")
 
     # Сортировка по product_id нужна для единого порядка блокировок
@@ -25,6 +29,7 @@ async def _create(db: AsyncSession, user_id: int, shipping_address: str,
         select(CartItem).where(CartItem.cart_id == cart.id).order_by(CartItem.product_id)
     )).all()
     if not items:
+        logger.debug("Заказ не создан | причина=корзина пуста user_id={}", user_id)
         raise HTTPException(400, "Корзина пуста")
 
     # Товары тоже блокируем и обновляем их состояние в SQLAlchemy
@@ -59,6 +64,8 @@ async def _create(db: AsyncSession, user_id: int, shipping_address: str,
             problems.append({"product_id": p.id, "name": p.name,
                              "reason": "insufficient_stock", "available": p.stock_quantity})
     if problems:
+        logger.warning("Заказ не создан | причина=товары недоступны user_id={} проблемы={}",
+                       user_id, [(p["product_id"], p["reason"]) for p in problems])
         raise HTTPException(409, detail={
             "code": "cart_unavailable",
             "message": "Некоторые товары недоступны",
@@ -96,6 +103,8 @@ async def _lock_order(db: AsyncSession, order_id: int, user_id: int) -> Order:
         .execution_options(populate_existing=True)
     )
     if order is None:
+        logger.warning("Заказ не найден или принадлежит другому пользователю | order_id={} user_id={}",
+                       order_id, user_id)
         raise HTTPException(404, "Заказ не найден")
     return order
 
@@ -104,6 +113,9 @@ async def _pay(db: AsyncSession, order_id: int, user_id: int) -> int:
     order = await _lock_order(db, order_id, user_id)
     # Статус проверяем уже под блокировкой: двойной клик не спишет деньги дважды
     if order.status != OrderStatus.PENDING:
+        # Повторная оплата не проходит молча
+        logger.warning("Оплата отклонена | причина=заказ не в ожидании оплаты order_id={} статус={}",
+                       order_id, getattr(order.status, "value", order.status))
         raise HTTPException(409, "Заказ нельзя оплатить: он уже не в ожидании оплаты")
 
     # Изменение баланса пользователя и статуса заказа
@@ -112,13 +124,16 @@ async def _pay(db: AsyncSession, order_id: int, user_id: int) -> int:
     return order_id
 
 
-async def _cancel(db: AsyncSession, order_id: int, user_id: int) -> int:
+async def _cancel(db: AsyncSession, order_id: int, user_id: int) -> tuple[int, bool]:
     order = await _lock_order(db, order_id, user_id)
     if order.status not in (OrderStatus.PENDING, OrderStatus.PAID):
+        logger.debug("Отмена отклонена | order_id={} статус={}",
+                     order_id, getattr(order.status, "value", order.status))
         raise HTTPException(409, "Этот заказ нельзя отменить")
 
     # Возврат денег на баланс за отмену оплаченного заказа
-    if order.status == OrderStatus.PAID:
+    refunded = order.status == OrderStatus.PAID
+    if refunded:
         await apply_balance_change(db, user_id, order.total_amount, TransactionType.REFUND, order.id)
 
     # Возвращаем остатки товарам
@@ -132,19 +147,26 @@ async def _cancel(db: AsyncSession, order_id: int, user_id: int) -> int:
         )
 
     order.status = OrderStatus.CANCELLED
-    return order_id
+    return order_id, refunded
 
 
 async def create_order(db: AsyncSession, user_id: int, shipping_address: str, contact_phone: str) -> int:
-    return await run_in_transaction(db, _create, user_id, shipping_address, contact_phone)
+    order_id = await run_in_transaction(db, _create, user_id, shipping_address, contact_phone)
+    logger.info("Заказ создан | order_id={} user_id={}", order_id, user_id)
+    return order_id
 
 
 async def pay_order(db: AsyncSession, order_id: int, user_id: int) -> int:
-    return await run_in_transaction(db, _pay, order_id, user_id)
+    result = await run_in_transaction(db, _pay, order_id, user_id)
+    audit.info("Заказ оплачен | order_id={} user_id={}", order_id, user_id)
+    return result
 
 
 async def cancel_order(db: AsyncSession, order_id: int, user_id: int) -> int:
-    return await run_in_transaction(db, _cancel, order_id, user_id)
+    cancelled_id, refunded = await run_in_transaction(db, _cancel, order_id, user_id)
+    audit.info("Заказ отменён | order_id={} user_id={} возврат_на_баланс={}",
+               cancelled_id, user_id, "да" if refunded else "нет")
+    return cancelled_id
 
 
 # noinspection PyTypeChecker

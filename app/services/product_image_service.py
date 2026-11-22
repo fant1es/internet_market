@@ -1,4 +1,5 @@
 from fastapi import HTTPException
+from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.concurrency import run_in_threadpool
 
@@ -10,15 +11,19 @@ from app.services.image_storage import (
     save_product_image,
 )
 
+audit = logger.bind(channel="audit")
+
 
 async def _store_file(data: bytes) -> str:
     """Проверяет размер, обрабатывает и сохраняет файл. Возвращает путь для БД."""
     if len(data) > MAX_IMAGE_BYTES:
+        logger.debug("Изображение отклонено | причина=слишком большой файл размер={} байт", len(data))
         raise HTTPException(413, f"Файл слишком большой (максимум {MAX_IMAGE_BYTES // 1024 // 1024} МБ)")
     try:
         # Pillow блокирует поток, поэтому уводим обработку в пул потоков
         return await run_in_threadpool(save_product_image, data)
     except InvalidImageError as e:
+        logger.warning("Изображение отклонено | причина={}", e)
         raise HTTPException(415, str(e))
 
 
@@ -32,7 +37,9 @@ async def _commit_path(db: AsyncSession, product: Product, path: str | None) -> 
         raise
 
 
-async def set_image(db: AsyncSession, product: Product, data: bytes) -> Product:
+async def set_image(db: AsyncSession, product: Product, data: bytes,
+                    actor_id: int | None = None) -> Product:
+    product_id = product.id  # до commit
     new_path = await _store_file(data)
     old_path = product.image_path
     try:
@@ -41,11 +48,14 @@ async def set_image(db: AsyncSession, product: Product, data: bytes) -> Product:
         delete_product_image(new_path)  # БД не приняла путь: не оставляем файл-сироту
         raise
     delete_product_image(old_path)  # старый файл удаляем только после успешного коммита
+    audit.info("Изображение товара заменено | product_id={} admin_id={}", product_id, actor_id or "-")
     return product
 
 
-async def clear_image(db: AsyncSession, product: Product) -> Product:
+async def clear_image(db: AsyncSession, product: Product, actor_id: int | None = None) -> Product:
+    product_id = product.id  # до commit
     old_path = product.image_path
     await _commit_path(db, product, None)
     delete_product_image(old_path)
+    audit.info("Изображение товара удалено | product_id={} admin_id={}", product_id, actor_id or "-")
     return product

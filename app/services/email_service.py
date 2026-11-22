@@ -1,12 +1,11 @@
-import logging
 import smtplib
 from email.message import EmailMessage
 
 import aiosmtplib
+from loguru import logger
 
 from app.config import settings
-
-logger = logging.getLogger(__name__)
+from app.services.email_templates import mask_email
 
 # Имя содержимого, само содержимое в байтах и MIME-тип (application/pdf например)
 Attachment = tuple[str, bytes, str]
@@ -38,7 +37,10 @@ async def send_email(to: str, subject: str, text: str,
             timeout=10
         )
     except (aiosmtplib.SMTPException, OSError):
-        logger.exception("Не удалось отправить письмо на %s (тема: %s)", to, subject)
+        # Ошибка проглочена (возвращаем False), поэтому здесь нужен traceback.
+        # Адрес маскируем: полный email в логах не храним
+        logger.exception("Не удалось отправить письмо | получатель={} тема={}", mask_email(to), subject)
         return False
 
+    logger.info("Письмо отправлено | получатель={} тема={}", mask_email(to), subject)
     return True
