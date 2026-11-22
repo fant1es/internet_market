@@ -46,6 +46,9 @@ async def authenticate(db: AsyncSession, email: str, password: str) -> User:
     if user is None:
         logger.warning("Неудачный вход | причина=пользователь не найден")
         raise HTTPException(status_code=401, detail="Неверный пароль или почта")
+    if not user.is_active:
+        logger.warning("Вход отклонён | причина=аккаунт заблокирован user_id={}", user.id)
+        raise HTTPException(status_code=401, detail="Аккаунт заблокирован")
     if not verify_password(password, user.password_hash):
         logger.warning("Неудачный вход | причина=неверный пароль user_id={}", user.id)
         raise HTTPException(status_code=401, detail="Неверный пароль или почта")
