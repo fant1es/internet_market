@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, BackgroundTasks, Response
+from fastapi import APIRouter, Depends, Query, BackgroundTasks, Response, Request
 from fastapi.responses import HTMLResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -32,11 +32,12 @@ async def my_orders(
     return await order_service.list_orders(db, user.id, status, limit)
 
 
+# noinspection PyTypeChecker
 @router.post("/{order_id}/pay", response_model=OrderOut, summary="Оплатить заказ с баланса")
-async def pay(order_id: int, background_tasks: BackgroundTasks,
+async def pay(order_id: int, request: Request, background_tasks: BackgroundTasks,
               db: AsyncSession = Depends(get_db), user=Depends(get_current_user)):
     await order_service.pay_order(db, order_id, user.id)
-    background_tasks.add_task(send_receipt_for_order, order_id)
+    background_tasks.add_task(send_receipt_for_order, order_id, request.state.lang)
     return await order_service.get_order(db, order_id)
 
 
@@ -47,15 +48,16 @@ async def cancel(order_id: int, db: AsyncSession = Depends(get_db), user=Depends
 
 # --- Раздел с роутами для чеков ----------------------------------------------------------------------------
 @router.get("/{order_id}/receipt", response_class=HTMLResponse)
-async def receipt_page(order_id: int, db: AsyncSession = Depends(get_db),
-                       user=Depends(get_current_user)):
-    return render_receipt_html(await order_service.get_receipt_order(db, order_id, user))
+async def receipt_page(order_id: int, request: Request,
+                       db: AsyncSession = Depends(get_db), user=Depends(get_current_user)):
+    return render_receipt_html(await order_service.get_receipt_order(db, order_id, user), request.state.lang)
 
 
 @router.get("/{order_id}/receipt.pdf")
-async def receipt_pdf(order_id: int, db: AsyncSession = Depends(get_db),
+async def receipt_pdf(order_id: int, request: Request, db: AsyncSession = Depends(get_db),
                       user=Depends(get_current_user)):
-    pdf = await build_receipt_pdf(await order_service.get_receipt_order(db, order_id, user))
+    order = await order_service.get_receipt_order(db, order_id, user)
+    pdf = await build_receipt_pdf(order, request.state.lang)
     return Response(pdf, media_type="application/pdf", headers={
         "Content-Disposition": f'attachment; filename="receipt_{order_id}.pdf"',
         "Cache-Control": "private, no-store",

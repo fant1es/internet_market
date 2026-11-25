@@ -5,6 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from weasyprint import HTML
 
+from app.i18n import DEFAULT
 from app.models.order import OrderStatus
 from app.database import async_session
 from app.models import Order, User
@@ -16,13 +17,13 @@ def _to_pdf(html: str) -> bytes:
     return HTML(string=html).write_pdf()
 
 
-async def build_receipt_pdf(order) -> bytes:
-    html = render_receipt_html(order) # Быстрый рендер в основном потоке
-    return await asyncio.to_thread(_to_pdf, html) # Тяжёлая часть в отдельном потоке
+async def build_receipt_pdf(order, lang: str = DEFAULT) -> bytes:
+    html = render_receipt_html(order, lang)  # Быстрый рендер в основном потоке
+    return await asyncio.to_thread(_to_pdf, html)  # Тяжёлая часть в отдельном потоке
 
 
 # noinspection PyTypeChecker
-async def send_receipt_for_order(order_id: int) -> None:
+async def send_receipt_for_order(order_id: int, lang: str = DEFAULT) -> None:
     async with async_session() as db:
         order = await db.scalar(
             select(Order).where(Order.id == order_id)
@@ -42,13 +43,13 @@ async def send_receipt_for_order(order_id: int) -> None:
         user_id = order.user_id  # запоминаем до commit для логов
 
         try:
-            pdf = await build_receipt_pdf(order)
+            pdf = await build_receipt_pdf(order, lang)
         except Exception:
             # Ошибка проглочена (return), нужен traceback
             logger.exception("Не удалось собрать PDF чека | order_id={} user_id={}", order_id, user_id)
             return
 
-        content = build_receipt_email(order, user.name)
+        content = build_receipt_email(order, user.name, lang)
         ok = await send_email(
             user.email, content.subject, content.text, content.html,
             attachments=[(f"receipt_{order.id}.pdf", pdf, "application/pdf")],

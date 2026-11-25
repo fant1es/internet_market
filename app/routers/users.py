@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Response
+from fastapi import APIRouter, Depends, Response, Request
 from fastapi.background import BackgroundTasks
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -31,14 +31,14 @@ async def change_password(data: ChangePasswordSchema, user: CurrentUser,
 
 
 @router.post("/me/email")
-async def request_email_change(data: ChangeEmailSchema, user: CurrentUser,
+async def request_email_change(request: Request, data: ChangeEmailSchema, user: CurrentUser,
                                db: Annotated[AsyncSession, Depends(get_db)],
                                background_tasks: BackgroundTasks):
     link = await user_service.request_email_change(db, user,
                                                    data.current_password, data.new_email)
 
-    confirm = email_templates.build_confirm_new_email(user.name, link)
-    notice = email_templates.build_old_email_notice(user.name, data.new_email)
+    confirm = email_templates.build_confirm_new_email(user.name, link, request.state.lang)
+    notice = email_templates.build_old_email_notice(user.name, data.new_email, request.state.lang)
 
     background_tasks.add_task(email_service.send_email, data.new_email, confirm.subject,
                               confirm.text, confirm.html)
