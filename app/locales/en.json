@@ -65,6 +65,36 @@
     },
     "product": {
       "attributes": "Characteristics"
+    },
+    "cart": {
+      "in_cart": "In cart",
+      "added": "Item added to cart",
+      "empty": "Your cart is empty",
+      "to_catalog": "Go to catalog",
+      "per_piece": "per pc.",
+      "in_stock": "In stock: {count} pcs.",
+      "remove": "Remove",
+      "items_header": "Items in cart ({count} pcs.)",
+      "total": "Total",
+      "subtotal_no_discount": "Subtotal before discount",
+      "discount": "Discount",
+      "to_pay": "To pay",
+      "checkout": "Checkout",
+      "qty_invalid": "Quantity must be a whole number, 1 or more"
     }
+  },
+  "checkout": {
+  "title": "Checkout",
+  "buyer": "Customer",
+  "items": "Items",
+  "total": "Total",
+  "phone": "Contact phone",
+  "phone_invalid": "Enter a valid phone number",
+  "address": "Delivery address",
+  "address_invalid": "Enter an address (at least 5 characters)",
+  "submit": "Confirm order"
+  },
+  "cart": {
+    "title": "Cart"
   }
 }

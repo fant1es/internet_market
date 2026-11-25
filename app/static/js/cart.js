@@ -16,7 +16,7 @@ function syncCartButtons() {
         btn.classList.toggle("btn-primary", !inCart);
         btn.classList.toggle("btn-outline-primary", inCart);
         btn.classList.toggle("in-cart", inCart);
-        btn.textContent = inCart ? "В корзине" : "В корзину";
+        btn.textContent = inCart ? t("js.cart.in_cart") : t("js.catalog.add_to_cart");
     });
 }
 
@@ -55,8 +55,8 @@ function renderCart(cart) {
     if (cart.items.length === 0) {
         cartRoot.innerHTML = `
           <div class="text-center text-muted py-5">
-            <p>Корзина пуста</p>
-            <a href="/" class="btn btn-primary">Перейти в каталог</a>
+            <p>${t("js.cart.empty")}</p>
+            <a href="/" class="btn btn-primary">${t("js.cart.to_catalog")}</a>
           </div>`;
         return;
     }
@@ -80,7 +80,7 @@ function renderCart(cart) {
              ${imageUrl
                 ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(p.name)}"
                         class="w-100 h-100 object-fit-contain rounded">`
-                : `<span class="text-muted small">Нет фото</span>`}
+                : `<span class="text-muted small">${t("js.catalog.no_photo")}</span>`}
           </a>
           <div class="flex-grow-1 d-flex flex-column flex-md-row gap-3">
             <div class="flex-grow-1">
@@ -89,9 +89,9 @@ function renderCart(cart) {
               <div class="mt-2">
                 <span class="fs-5 fw-bold">${formatPrice(p.price)}</span>
                 ${oldPrice ? `<s class="text-muted ms-2">${formatPrice(oldPrice)}</s>` : ""}
-                <span class="text-muted small">за шт.</span>
+                <span class="text-muted small">${t("js.cart.per_piece")}</span>
               </div>
-              <div class="text-muted small mt-1">В наличии: ${p.stock_quantity} шт.</div>
+              <div class="text-muted small mt-1">${t("js.cart.in_stock", { count: p.stock_quantity })}</div>
             </div>
 
             <div class="d-flex flex-md-column align-items-md-end justify-content-between gap-2">
@@ -103,7 +103,7 @@ function renderCart(cart) {
                     ? `<s class="text-muted small text-nowrap">${formatPrice(roundMoney(oldPrice * quantity))}</s>`
                     : ""}
               </div>
-              <button class="btn btn-outline-danger btn-sm remove-item" data-id="${id}">Удалить</button>
+              <button class="btn btn-outline-danger btn-sm remove-item" data-id="${id}">${t("js.cart.remove")}</button>
             </div>
           </div>
         </div>`;
@@ -113,32 +113,32 @@ function renderCart(cart) {
       <div class="row g-4 align-items-start">
         <div class="col-lg-8">
           <div class="card">
-            <div class="card-header fw-semibold">Товары в корзине (${cart.total_quantity} шт.)</div>
+            <div class="card-header fw-semibold">${t("js.cart.items_header", { count: cart.total_quantity })}</div>
             <div>${rows}</div>
           </div>
         </div>
 
         <div class="col-lg-4">
           <div class="card position-sticky" style="top: 1rem;">
-            <div class="card-header fw-semibold">Итого</div>
+            <div class="card-header fw-semibold">${t("js.cart.total")}</div>
             <div class="card-body">
               <div class="d-flex justify-content-between mb-2">
-                <span class="text-muted">Сумма без скидки</span>
+                <span class="text-muted">${t("js.cart.subtotal_no_discount")}</span>
                 <span class="text-nowrap">${formatPrice(totalOld)}</span>
               </div>
               <div class="d-flex justify-content-between mb-2">
-                <span class="text-muted">Скидка</span>
+                <span class="text-muted">${t("js.cart.discount")}</span>
                 <span class="text-nowrap ${discount > 0 ? "text-danger" : ""}">
                   ${discount > 0 ? "−" : ""}${formatPrice(discount)}
                 </span>
               </div>
               <hr>
               <div class="d-flex justify-content-between align-items-baseline mb-3">
-                <span class="fs-5">К оплате</span>
+                <span class="fs-5">${t("js.cart.to_pay")}</span>
                 <strong class="fs-4 text-nowrap">${formatPrice(total)}</strong>
               </div>
               <button class="btn btn-success w-100" data-bs-toggle="modal" data-bs-target="#checkout-modal">
-              Оформить заказ
+                ${t("js.cart.checkout")}
               </button>
             </div>
           </div>
@@ -173,7 +173,7 @@ document.addEventListener("click", async (e) => {
             body: { product_id: Number(btn.dataset.id), quantity: 1 },
         });
         refreshCartUI(cart);
-        showAlert("Товар добавлен в корзину", "success");
+        showAlert(t("js.cart.added"), "success");
     }
     catch (err) {
         showAlert(errorText(err));
@@ -193,7 +193,7 @@ if (cartRoot) {
         cartProblems.delete(Number(input.closest(".cart-item").dataset.productId));
         try {
             if (!Number.isInteger(quantity) || quantity < 1) {
-                throw new Error("Количество должно быть целым числом от 1");
+                throw new Error(t("js.cart.qty_invalid"));
             }
             refreshCartUI(await api(`/cart/items/${input.dataset.id}`, {
                 method: "PATCH",

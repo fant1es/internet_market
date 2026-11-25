@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 
-{% block title %}Корзина{% endblock %}
+{% block title %}{{ t('cart.title') }}{% endblock %}
 
 {% block content %}
-  <h1 class="mb-4">Корзина</h1>
+  <h1 class="mb-4">{{ t('cart.title') }}</h1>
   <div id="cart-root"></div>
 
   <!-- Модальное окно для заказа -->
@@ -11,42 +11,42 @@
     <div class="modal-dialog modal-dialog-centered">
       <form class="modal-content" id="checkout-form" novalidate>
         <div class="modal-header">
-          <h5 class="modal-title" id="checkout-title">Оформление заказа</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+          <h5 class="modal-title" id="checkout-title">{{ t('checkout.title') }}</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ t('common.close') }}"></button>
         </div>
-         <div class="modal-body">
+        <div class="modal-body">
           <div class="mb-3">
-            <div class="text-muted small">Покупатель</div>
+            <div class="text-muted small">{{ t('checkout.buyer') }}</div>
             <div class="fw-semibold">{{ user.name }}</div>
           </div>
 
           <div class="mb-3">
-            <div class="text-muted small mb-1">Товары</div>
+            <div class="text-muted small mb-1">{{ t('checkout.items') }}</div>
             <ul class="list-unstyled mb-0" id="checkout-items"></ul>
             <hr class="my-2">
             <div class="d-flex justify-content-between align-items-baseline">
-              <span>Итого</span>
+              <span>{{ t('checkout.total') }}</span>
               <strong class="fs-5 text-nowrap" id="checkout-total"></strong>
             </div>
           </div>
 
           <div class="mb-3">
-            <label class="form-label" for="co-phone">Телефон для связи</label>
+            <label class="form-label" for="co-phone">{{ t('checkout.phone') }}</label>
             <input type="tel" class="form-control" id="co-phone" name="contact_phone"
                    inputmode="tel" autocomplete="tel" maxlength="20" required
                    pattern="[0-9+\s\-\(\)]{10,20}" placeholder="+375 29 123-45-67"
                    value="{{ user.phone or '' }}">
-            <div class="invalid-feedback">Укажите корректный номер телефона</div>
+            <div class="invalid-feedback">{{ t('checkout.phone_invalid') }}</div>
           </div>
 
-          <label class="form-label" for="co-address">Адрес доставки</label>
+          <label class="form-label" for="co-address">{{ t('checkout.address') }}</label>
           <textarea class="form-control" id="co-address" name="shipping_address"
                     rows="3" minlength="5" maxlength="500" required>{{ user.default_address or '' }}</textarea>
-          <div class="invalid-feedback">Укажите адрес (не короче 5 символов)</div>
+          <div class="invalid-feedback">{{ t('checkout.address_invalid') }}</div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Отмена</button>
-          <button type="submit" class="btn btn-success">Подтвердить заказ</button>
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ t('common.cancel') }}</button>
+          <button type="submit" class="btn btn-success">{{ t('checkout.submit') }}</button>
         </div>
       </form>
     </div>
