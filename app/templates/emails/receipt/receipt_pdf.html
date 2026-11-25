@@ -1,8 +1,8 @@
 <!doctype html>
-<html lang="ru">
+<html lang="{{ lang }}">
 <head>
 <meta charset="utf-8">
-<title>Чек по заказу №{{ order.id }} — {{ shop_name }}</title>
+<title>{{ t('receipt.page_title', id=order.id, shop=shop_name) }}</title>
 <style>
   body { font-family: "DejaVu Sans", sans-serif; font-size: 12px; color: #212529; }
   table { width: 100%; border-collapse: collapse; margin-top: 16px; }
@@ -15,10 +15,15 @@
 </head>
 <body>
   <h1>{{ shop_name }}</h1>
-  <h2>Чек по заказу №{{ order.id }}</h2>
-  <p>Дата: {{ order.created_at.strftime("%d.%m.%Y %H:%M") }}</p>
+  <h2>{{ t('receipt.title', id=order.id) }}</h2>
+  <p>{{ t('receipt.date') }}: {{ order.created_at.strftime("%d.%m.%Y %H:%M") }}</p>
   <table>
-    <tr><th>Товар</th><th class="num">Кол-во</th><th class="num">Цена</th><th class="num">Сумма</th></tr>
+    <tr>
+      <th>{{ t('receipt.product') }}</th>
+      <th class="num">{{ t('receipt.qty') }}</th>
+      <th class="num">{{ t('receipt.price') }}</th>
+      <th class="num">{{ t('receipt.sum') }}</th>
+    </tr>
     {% for i in order.items %}
     <tr>
       <td>{{ i.product_name }}</td>
@@ -28,7 +33,7 @@
     </tr>
     {% endfor %}
   </table>
-  <p class="total">Итого: {{ "%.2f"|format(order.total_amount) }}</p>
-  <button class="no-print" onclick="window.print()">Печать</button>
+  <p class="total">{{ t('receipt.total') }}: {{ "%.2f"|format(order.total_amount) }}</p>
+  <button class="no-print" onclick="window.print()">{{ t('receipt.print') }}</button>
 </body>
 </html>
