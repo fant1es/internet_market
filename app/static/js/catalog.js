@@ -66,8 +66,8 @@ async function loadPriceBounds() {
         state.maxPrice = "";
         minPriceInput.value = "";
         maxPriceInput.value = "";
-        minPriceInput.placeholder = `от ${bounds.min}`;
-        maxPriceInput.placeholder = `до ${bounds.max}`;
+        minPriceInput.placeholder = t("js.catalog.price_from", { value: bounds.min });
+        maxPriceInput.placeholder = t("js.catalog.price_to", { value: bounds.max });
         updateSlider();
     }
     catch (err) {
@@ -106,7 +106,7 @@ rangeMax.addEventListener("input", onSlide);
 
 function renderProducts(items) {
     if (items.length === 0) {
-        productsGrid.innerHTML = `<div class="col-12 text-center text-muted py-5">Ничего не найдено</div>`;
+        productsGrid.innerHTML = `<div class="col-12 text-center text-muted py-5">${t("js.catalog.no_results")}</div>`;
         return;
     }
 
@@ -124,7 +124,7 @@ function renderProducts(items) {
                 ${imageUrl
                 ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(p.name)}"
                     class="card-img-top object-fit-contain" loading="lazy">`
-                : `<div class="d-flex align-items-center justify-content-center text-muted">Нет фото</div>`}
+                : `<div class="d-flex align-items-center justify-content-center text-muted">${t("js.catalog.no_photo")}</div>`}
             </a>
             ${hasDiscount
                 ? `<span class="badge bg-danger position-absolute top-0 start-0 m-2">−${discountPercent}%</span>`
@@ -141,8 +141,8 @@ function renderProducts(items) {
               </div>
               ${inStock
                 ? `<button class="btn btn-primary btn-sm mt-auto add-to-cart"
-                           data-id="${p.id}">В корзину</button>`
-                : `<button class="btn btn-secondary btn-sm mt-auto" disabled>Нет в наличии</button>`}
+                data-id="${p.id}">${t("js.catalog.add_to_cart")}</button>`
+                : `<button class="btn btn-secondary btn-sm mt-auto" disabled>${t("js.catalog.out_of_stock")}</button>`}
             </div>
           </div>
         </div>`;
@@ -271,7 +271,7 @@ async function loadBrands() {
                          id="brand-${escapeHtml(b.slug)}" value="${escapeHtml(b.slug)}">
                   <label class="form-check-label" for="brand-${escapeHtml(b.slug)}">${escapeHtml(b.name)}</label>
                 </div>`).join("")
-            : `<span class="text-muted small">Нет брендов</span>`;
+            : `<span class="text-muted small">${t("js.catalog.no_brands")}</span>`;
     }
     catch (err) {
         showAlert(errorText(err));
@@ -292,7 +292,7 @@ async function loadFilters() {
     const slug = state.category;
 
     if (!slug) {
-        filtersBox.innerHTML = `<p class="small text-muted mt-3 mb-0">Выберите категорию, чтобы фильтровать по характеристикам.</p>`;
+        filtersBox.innerHTML = `<p class="small text-muted mt-3 mb-0">${t("js.catalog.choose_category")}</p>`;
         return;
     }
 

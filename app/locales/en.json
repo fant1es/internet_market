@@ -35,5 +35,36 @@
     "password_hint": "6-20 characters: letters, digits, _ + -",
     "have_account": "Already have an account?",
     "login_link": "Log in"
+  },
+  "catalog": {
+  "title": "Catalog",
+  "search_placeholder": "Search by name...",
+  "all_categories": "All categories",
+  "filters": "Filters",
+  "reset": "Reset",
+  "sort": "Sort by",
+  "sort_newest": "Newest first",
+  "sort_price_asc": "Price: low to high",
+  "sort_price_desc": "Price: high to low",
+  "price": "Price",
+  "from": "from",
+  "to": "to",
+  "discount_only": "On sale only",
+  "brand": "Brand"
+  },
+  "js": {
+    "catalog": {
+      "no_results": "Nothing found",
+      "no_photo": "No photo",
+      "add_to_cart": "Add to cart",
+      "out_of_stock": "Out of stock",
+      "no_brands": "No brands",
+      "choose_category": "Select a category to filter by attributes.",
+      "price_from": "from {value}",
+      "price_to": "to {value}"
+    },
+    "product": {
+      "attributes": "Characteristics"
+    }
   }
 }

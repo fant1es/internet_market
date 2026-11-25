@@ -35,5 +35,36 @@
     "password_hint": "6-20 символов: буквы, цифры, _ + -",
     "have_account": "Уже есть аккаунт?",
     "login_link": "Войти"
+  },
+  "catalog": {
+  "title": "Каталог",
+  "search_placeholder": "Поиск по названию...",
+  "all_categories": "Все категории",
+  "filters": "Фильтры",
+  "reset": "Сбросить",
+  "sort": "Сортировка",
+  "sort_newest": "Сначала новые",
+  "sort_price_asc": "Сначала дешёвые",
+  "sort_price_desc": "Сначала дорогие",
+  "price": "Цена",
+  "from": "от",
+  "to": "до",
+  "discount_only": "Только со скидкой",
+  "brand": "Бренд"
+  },
+  "js": {
+    "catalog": {
+      "no_results": "Ничего не найдено",
+      "no_photo": "Нет фото",
+      "add_to_cart": "В корзину",
+      "out_of_stock": "Нет в наличии",
+      "no_brands": "Нет брендов",
+      "choose_category": "Выберите категорию, чтобы фильтровать по характеристикам.",
+      "price_from": "от {value}",
+      "price_to": "до {value}"
+    },
+    "product": {
+      "attributes": "Характеристики"
+    }
   }
 }

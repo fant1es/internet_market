@@ -152,7 +152,7 @@ function renderAttributes(attrs) {
 
     return `
       <section class="mt-5">
-        <h2 class="h4 mb-3">Характеристики</h2>
+        <h2 class="h4 mb-3">${t("js.product.attributes")}</h2>
         ${rows}
       </section>`;
 }
