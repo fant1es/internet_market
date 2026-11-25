@@ -7,6 +7,7 @@ from app.routers import reviews
 from app.routers.auth import auth_router
 from app.routers import users
 from app.logging_setup import setup_logging
+from app.middleware import request_id_middleware
 
 app = FastAPI()
 app.include_router(auth_router)
@@ -28,6 +29,8 @@ app.include_router(reviews.product_reviews_router)
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 setup_logging()
+
+app.middleware("http")(request_id_middleware)
 
 @app.get("/health")
 def health():
