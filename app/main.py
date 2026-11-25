@@ -1,13 +1,14 @@
 from fastapi import FastAPI
 from starlette.staticfiles import StaticFiles
 
-from app.routers import pages, products, brands, categories, carts, balance, orders, admin_reports, admin_attributes
+from app.routers import pages, products, brands, categories, carts, balance, orders, admin_reports, admin_attributes, \
+    langs
 from app.routers import admin_references, admin_products
 from app.routers import reviews
 from app.routers.auth import auth_router
 from app.routers import users
 from app.logging_setup import setup_logging
-from app.middleware import request_id_middleware
+from app.middleware import request_id_middleware, lang_middleware
 
 app = FastAPI()
 app.include_router(auth_router)
@@ -26,11 +27,13 @@ app.include_router(admin_reports.router)
 app.include_router(admin_attributes.router)
 app.include_router(reviews.review_router)
 app.include_router(reviews.product_reviews_router)
+app.include_router(langs.router)
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 setup_logging()
 
 app.middleware("http")(request_id_middleware)
+app.middleware("http")(lang_middleware)
 
 @app.get("/health")
 def health():

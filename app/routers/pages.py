@@ -2,12 +2,29 @@ from fastapi import APIRouter, Request
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import RedirectResponse
 from loguru import logger
+from jinja2 import pass_context
 
 from app.dependencies.auth import CurrentUserOptional
 from app.models.user import UserRole
 
+from app.i18n import translate, js_strings
+
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
+
+
+@pass_context
+def jinja_t(ctx, key: str, **params):
+    return translate(key, ctx["request"].state.lang, **params)
+
+
+@pass_context
+def jinja_js_strings(ctx):
+    return js_strings(ctx["request"].state.lang)
+
+templates.env.globals["t"] = jinja_t
+templates.env.globals["js_strings"] = jinja_js_strings
+
 
 @router.get("/")
 async def index(request: Request, user: CurrentUserOptional):

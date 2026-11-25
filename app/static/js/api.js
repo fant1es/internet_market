@@ -1,3 +1,10 @@
+// Перевод для JS: словарь кладёт в window.I18N шаблон base.html
+function t(key, params) {
+  let s = window.I18N?.[key] ?? key;
+  if (params) s = s.replace(/\{(\w+)\}/g, (m, k) => params[k] ?? m);
+  return s;
+}
+
 class ApiError extends Error {
   constructor(status, data) {
       // При передаче обьекта нужно обрабатывать его, чтобы не было сообщения [object Object]
@@ -57,8 +64,8 @@ function errorText(err) {
 }
 
 function formatPrice(price) {
-    // price приходит строкой ("29990.00"), для форматирования приводим к числу
-    return Number(price).toLocaleString("ru-RU") + " BYN";
+    const locale = window.LANG === "en" ? "en-US" : "ru-RU";
+    return Number(price).toLocaleString(locale) + " BYN";
 }
 
 // Откладывает вызов fn, пока пользователь не перестанет вводить на delay мс

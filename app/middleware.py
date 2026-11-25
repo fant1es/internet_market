@@ -4,6 +4,8 @@ import uuid
 from fastapi import Request
 from loguru import logger
 
+from app.i18n import detect_lang
+
 
 async def request_id_middleware(request: Request, call_next):
     # Убираем access строки по static и health
@@ -30,3 +32,8 @@ async def request_id_middleware(request: Request, call_next):
 
     response.headers["X-Request-ID"] = request_id
     return response
+
+
+async def lang_middleware(request: Request, call_next):
+    request.state.lang = detect_lang(request)
+    return await call_next(request)

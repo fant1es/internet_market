@@ -1,0 +1,24 @@
+{
+  "common": {
+    "shop": "Shop",
+    "cancel": "Cancel",
+    "close": "Close"
+  },
+  "nav": {
+    "language": "Language",
+    "cart": "Cart",
+    "orders": "Orders",
+    "balance": "Balance",
+    "hello": "Hello,",
+    "login": "Log in",
+    "logout": "Log out"
+  },
+  "topup": {
+    "title": "Top up balance",
+    "current": "Current balance:",
+    "amount": "Amount",
+    "amount_invalid": "Enter an amount from 0.01 to 100,000",
+    "note": "Educational simulation: no real money is charged.",
+    "submit": "Top up"
+  }
+}
