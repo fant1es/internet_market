@@ -1,19 +1,24 @@
-const STATUSES = {
-    pending: { label: "Ожидает оплаты", cls: "bg-warning text-dark" },
-    paid: { label: "Оплачен", cls: "bg-info text-dark" },
-    completed: { label: "Выполнен", cls: "bg-success" },
-    cancelled: { label: "Отменён", cls: "bg-secondary" },
+const STATUS_CLASSES = {
+    pending: "bg-warning text-dark",
+    paid: "bg-info text-dark",
+    completed: "bg-success",
+    cancelled: "bg-secondary",
 };
 
 function statusOf(order) {
-    return STATUSES[order.status] ?? { label: order.status, cls: "bg-secondary" };
+    const key = `status.${order.status}`;
+    return {
+        label: window.I18N?.[key] ? t(key) : order.status,   // неизвестный статус показываем как есть
+        cls: STATUS_CLASSES[order.status] ?? "bg-secondary",
+    };
 }
 
 function formatDate(iso) {
     // Сервер отдаёт время без часового пояса (это UTC базы). Без "Z" браузер счёл бы его местным
     const hasZone = /[zZ]|[+-]\d\d:\d\d$/.test(iso);
+    const locale = window.LANG === "en" ? "en-GB" : "ru-RU";
     return new Date(hasZone ? iso : iso + "Z")
-        .toLocaleString("ru-RU", { dateStyle: "short", timeStyle: "short" });
+        .toLocaleString(locale, { dateStyle: "short", timeStyle: "short" });
 }
 
 function formatPhone(p) {
@@ -24,13 +29,12 @@ function formatPhone(p) {
 
 // Кнопки зависят от статуса: оплата только для pending, отмена еще и для paid,
 function actionsHtml(order) {
-    const pay = `<button class="btn btn-success btn-sm order-pay" data-id="${order.id}">Оплатить</button>`;
-    const cancel = `<button class="btn btn-outline-danger btn-sm order-cancel" data-id="${order.id}">Отменить</button>`;
-    
-    // Ссылки на чек доступны для paid и completed
+    const pay = `<button class="btn btn-success btn-sm order-pay" data-id="${order.id}">${t("js.orders.pay")}</button>`;
+    const cancel = `<button class="btn btn-outline-danger btn-sm order-cancel" data-id="${order.id}">${t("js.orders.cancel")}</button>`;
+
     const receipt = `
-        <a class="btn btn-outline-secondary btn-sm" href="/orders/${order.id}/receipt" target="_blank" rel="noopener">Чек</a>
-        <a class="btn btn-outline-secondary btn-sm" href="/orders/${order.id}/receipt.pdf">Скачать PDF</a>`;
+        <a class="btn btn-outline-secondary btn-sm" href="/orders/${order.id}/receipt" target="_blank" rel="noopener">${t("js.orders.receipt")}</a>
+        <a class="btn btn-outline-secondary btn-sm" href="/orders/${order.id}/receipt.pdf">${t("js.orders.download_pdf")}</a>`;
 
     if (order.status === "pending") return pay + cancel;
     if (order.status === "paid") return receipt + cancel;
@@ -51,19 +55,19 @@ function renderOrder(order) {
     return `
     <div class="card mb-3 order-card" data-id="${order.id}">
       <div class="card-header d-flex justify-content-between align-items-center">
-        <span class="fw-semibold">Заказ №${order.id}
+        <span class="fw-semibold">${t("js.orders.order_no", { id: order.id })}
           <span class="text-muted fw-normal ms-2">${formatDate(order.created_at)}</span>
         </span>
         <span class="badge ${st.cls}">${st.label}</span>
       </div>
       <div class="card-body">
         <ul class="list-unstyled mb-3">${items}</ul>
-        <div class="text-muted small">Адрес доставки: ${escapeHtml(order.shipping_address ?? "-")}</div>
-        <div class="text-muted small">Телефон: ${formatPhone(order.contact_phone)}</div>
+        <div class="text-muted small">${t("js.orders.address")}: ${escapeHtml(order.shipping_address ?? "-")}</div>
+        <div class="text-muted small">${t("js.orders.phone")}: ${formatPhone(order.contact_phone)}</div>
       </div>
       <div class="card-footer d-flex justify-content-between align-items-center">
         <div class="order-actions d-flex gap-2">${actionsHtml(order)}</div>
-        <div>Итого: <strong class="fs-5 text-nowrap">${formatPrice(order.total_amount)}</strong></div>
+        <div>${t("js.orders.total")}: <strong class="fs-5 text-nowrap">${formatPrice(order.total_amount)}</strong></div>
       </div>
     </div>`;
 }
@@ -74,7 +78,7 @@ function renderOrderRow(order) {
     return `
     <a href="/my-orders" class="list-group-item list-group-item-action
                                 d-flex justify-content-between align-items-center gap-3">
-      <span>Заказ №${order.id}
+      <span>${t("js.orders.order_no", { id: order.id })}
         <span class="text-muted small ms-2">${formatDate(order.created_at)}</span>
       </span>
       <span class="d-flex align-items-center gap-3">
@@ -91,14 +95,14 @@ function bindOrderActions(root, onChange) {
         if (!btn) return;
 
         const isPay = btn.classList.contains("order-pay");
-        if (!isPay && !confirm("Отменить заказ? Товары вернутся на склад, а если заказ оплачен, деньги вернутся на баланс.")) {
+        if (!isPay && !confirm(t("js.orders.cancel_confirm"))) {
             return;
         }
 
         btn.disabled = true; // защита от двойного клика
         try {
             await api(`/orders/${btn.dataset.id}/${isPay ? "pay" : "cancel"}`, { method: "POST" });
-            showAlert(isPay ? "Заказ оплачен" : "Заказ отменён", "success");
+            showAlert(isPay ? t("js.orders.paid") : t("js.orders.cancelled"), "success");
         }
         catch (err) {
             showAlert(errorText(err));

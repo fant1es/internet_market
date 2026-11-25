@@ -57,7 +57,7 @@ if (balanceAmount) {
             });
             setBalance(res.balance);
             modal.hide();
-            showAlert("Баланс пополнен", "success");
+            showAlert(t("js.balance.topped_up"), "success");
         }
         catch (err) {
             showAlert(errorText(err));

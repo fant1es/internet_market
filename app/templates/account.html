@@ -1,61 +1,61 @@
 {% extends "base.html" %}
 
-{% block title %}Личный кабинет{% endblock %}
+{% block title %}{{ t('account.title') }}{% endblock %}
 
 {% block content %}
-  <h1 class="mb-4">Личный кабинет</h1>
+  <h1 class="mb-4">{{ t('account.title') }}</h1>
 
   <div class="row g-4">
     <div class="col-lg-5">
       <div class="card">
-        <div class="card-header fw-semibold">Профиль</div>
+        <div class="card-header fw-semibold">{{ t('account.profile') }}</div>
         <form class="card-body" id="profile-form" novalidate>
           <fieldset id="pf-fields" disabled>
             <div class="mb-3">
-              <label class="form-label" for="pf-name">Имя</label>
+              <label class="form-label" for="pf-name">{{ t('auth.name') }}</label>
               <input class="form-control" id="pf-name" name="name" value="{{ user.name }}"
                      minlength="2" maxlength="100" required>
-              <div class="invalid-feedback">Укажите имя (только буквы, пробелы и дефис)</div>
+              <div class="invalid-feedback">{{ t('account.name_invalid') }}</div>
             </div>
 
             <div class="mb-3">
-              <label class="form-label" for="pf-email">Email</label>
+              <label class="form-label" for="pf-email">{{ t('auth.email') }}</label>
               <input class="form-control" id="pf-email" value="{{ user.email }}" disabled>
-            <div class="form-text">Смена почты находится в разделе «Безопасность»</div>
+              <div class="form-text">{{ t('account.email_hint') }}</div>
             </div>
 
             <div class="mb-3">
-              <label class="form-label" for="pf-phone">Телефон</label>
+              <label class="form-label" for="pf-phone">{{ t('account.phone') }}</label>
               <input type="tel" class="form-control" id="pf-phone" name="phone"
                      inputmode="tel" autocomplete="tel" maxlength="25"
-                     pattern="[0-9+\s\-\(\)]{9,25}" placeholder="Не указан"
+                     pattern="[0-9+\s\-\(\)]{9,25}" placeholder="{{ t('account.not_set') }}"
                      value="{{ user.phone or '' }}">
-              <div class="invalid-feedback">Укажите номер в международном формате</div>
+              <div class="invalid-feedback">{{ t('account.phone_invalid') }}</div>
             </div>
 
             <div class="mb-3">
-              <label class="form-label" for="pf-address">Адрес по умолчанию</label>
+              <label class="form-label" for="pf-address">{{ t('account.address') }}</label>
               <textarea class="form-control" id="pf-address" name="default_address"
-                        rows="3" minlength="5" maxlength="500" placeholder="Не указан">{{ user.default_address or '' }}</textarea>
-              <div class="invalid-feedback">Адрес не короче 5 символов</div>
+                        rows="3" minlength="5" maxlength="500" placeholder="{{ t('account.not_set') }}">{{ user.default_address or '' }}</textarea>
+              <div class="invalid-feedback">{{ t('account.address_invalid') }}</div>
             </div>
           </fieldset>
 
           <div id="pf-view-actions">
-            <button type="button" class="btn btn-outline-primary" id="pf-edit">Изменить профиль</button>
+            <button type="button" class="btn btn-outline-primary" id="pf-edit">{{ t('account.edit_profile') }}</button>
           </div>
           <div id="pf-edit-actions" hidden>
-            <button type="submit" class="btn btn-primary me-2">Сохранить</button>
-            <button type="button" class="btn btn-outline-secondary" id="pf-cancel">Отмена</button>
+            <button type="submit" class="btn btn-primary me-2">{{ t('common.save') }}</button>
+            <button type="button" class="btn btn-outline-secondary" id="pf-cancel">{{ t('common.cancel') }}</button>
           </div>
         </form>
       </div>
 
       <div class="card mt-4">
-        <div class="card-header fw-semibold">Безопасность</div>
+        <div class="card-header fw-semibold">{{ t('account.security') }}</div>
         <div class="card-body">
           <div id="pw-view-actions">
-            <button type="button" class="btn btn-outline-primary" id="pw-open">Сменить пароль</button>
+            <button type="button" class="btn btn-outline-primary" id="pw-open">{{ t('account.change_password') }}</button>
           </div>
 
           <form id="password-form" novalidate hidden>
@@ -64,55 +64,55 @@
                    value="{{ user.email }}" tabindex="-1" aria-hidden="true" readonly>
 
             <div class="mb-3">
-              <label class="form-label" for="pw-current">Текущий пароль</label>
+              <label class="form-label" for="pw-current">{{ t('account.current_password') }}</label>
               <input type="password" class="form-control" id="pw-current" name="current_password"
                      autocomplete="current-password" maxlength="128">
               <div class="invalid-feedback"></div>
             </div>
 
             <div class="mb-3">
-              <label class="form-label" for="pw-new">Новый пароль</label>
+              <label class="form-label" for="pw-new">{{ t('account.new_password') }}</label>
               <input type="password" class="form-control" id="pw-new" name="new_password"
                      autocomplete="new-password" maxlength="128">
               <div class="invalid-feedback"></div>
-              <div class="form-text">От 8 до 128 символов</div>
+              <div class="form-text">{{ t('account.password_hint') }}</div>
             </div>
 
             <div class="mb-3">
-              <label class="form-label" for="pw-confirm">Повторите новый пароль</label>
+              <label class="form-label" for="pw-confirm">{{ t('account.confirm_password') }}</label>
               <input type="password" class="form-control" id="pw-confirm" name="confirm_password"
                      autocomplete="new-password" maxlength="128">
               <div class="invalid-feedback"></div>
             </div>
 
-            <button type="submit" class="btn btn-primary me-2">Сохранить</button>
-            <button type="button" class="btn btn-outline-secondary" id="pw-cancel">Отмена</button>
+            <button type="submit" class="btn btn-primary me-2">{{ t('common.save') }}</button>
+            <button type="button" class="btn btn-outline-secondary" id="pw-cancel">{{ t('common.cancel') }}</button>
           </form>
 
           <hr>
 
           <div id="em-view-actions">
-            <button type="button" class="btn btn-outline-primary" id="em-open">Сменить почту</button>
+            <button type="button" class="btn btn-outline-primary" id="em-open">{{ t('account.change_email') }}</button>
           </div>
 
           <form id="email-form" novalidate hidden>
             <div class="mb-3">
-              <label class="form-label" for="em-new">Новая почта</label>
+              <label class="form-label" for="em-new">{{ t('account.new_email') }}</label>
               <input type="email" class="form-control" id="em-new" name="new_email"
                      autocomplete="off" maxlength="254">
               <div class="invalid-feedback"></div>
-              <div class="form-text">Мы отправим на неё ссылку подтверждения</div>
+              <div class="form-text">{{ t('account.new_email_hint') }}</div>
             </div>
 
             <div class="mb-3">
-              <label class="form-label" for="em-password">Текущий пароль</label>
+              <label class="form-label" for="em-password">{{ t('account.current_password') }}</label>
               <input type="password" class="form-control" id="em-password" name="current_password"
                      autocomplete="current-password" maxlength="128">
               <div class="invalid-feedback"></div>
             </div>
 
-            <button type="submit" class="btn btn-primary me-2">Отправить письмо</button>
-            <button type="button" class="btn btn-outline-secondary" id="em-cancel">Отмена</button>
+            <button type="submit" class="btn btn-primary me-2">{{ t('account.send_email') }}</button>
+            <button type="button" class="btn btn-outline-secondary" id="em-cancel">{{ t('common.cancel') }}</button>
           </form>
         </div>
       </div>
@@ -120,14 +120,14 @@
 
     <div class="col-lg-7">
       <section id="pending-block" hidden class="mb-4">
-        <h2 class="h5 mb-3">Ждут оплаты <span class="badge bg-warning text-dark" id="pending-count"></span></h2>
+        <h2 class="h5 mb-3">{{ t('account.pending_orders') }} <span class="badge bg-warning text-dark" id="pending-count"></span></h2>
         <div id="pending-root"></div>
       </section>
 
       <section>
         <div class="d-flex justify-content-between align-items-baseline mb-3">
-          <h2 class="h5 mb-0">Последние заказы</h2>
-          <a href="/my-orders">Все заказы →</a>
+          <h2 class="h5 mb-0">{{ t('account.recent_orders') }}</h2>
+          <a href="/my-orders">{{ t('account.all_orders') }}</a>
         </div>
         <div id="recent-root" class="list-group"></div>
       </section>

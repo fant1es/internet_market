@@ -66,7 +66,7 @@ if (profileForm) {
             restore();
             setEditing(false);
             if (navName) navName.textContent = me.name;
-            showAlert("Профиль сохранён", "success");
+            showAlert(t("js.account.saved"), "success");
         }
         catch (err) {
             const detail = err.data?.detail;
@@ -96,7 +96,7 @@ if (profileForm) {
 
             recentRoot.innerHTML = recent.length
                 ? recent.map(renderOrderRow).join("")
-                : `<div class="list-group-item text-muted">Других заказов пока нет</div>`;
+                : `<div class="list-group-item text-muted">${t("js.account.no_other_orders")}</div>`;
         }
         catch (err) {
             showAlert(errorText(err));

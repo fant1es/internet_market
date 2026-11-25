@@ -4,8 +4,8 @@ function renderOrders(orders) {
     if (orders.length === 0) {
         ordersRoot.innerHTML = `
           <div class="text-center text-muted py-5">
-            <p>Заказов пока нет</p>
-            <a href="/" class="btn btn-primary">Перейти в каталог</a>
+            <p>${t("js.orders.empty")}</p>
+            <a href="/" class="btn btn-primary">${t("js.cart.to_catalog")}</a>
           </div>`;
         return;
     }

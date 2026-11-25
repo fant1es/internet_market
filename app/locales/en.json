@@ -2,7 +2,8 @@
   "common": {
     "shop": "Shop",
     "cancel": "Cancel",
-    "close": "Close"
+    "close": "Close",
+    "save": "Save"
   },
   "nav": {
     "language": "Language",
@@ -81,18 +82,80 @@
       "to_pay": "To pay",
       "checkout": "Checkout",
       "qty_invalid": "Quantity must be a whole number, 1 or more"
+    },
+    "orders": {
+      "title": "My orders",
+      "empty": "No orders yet",
+      "order_no": "Order #{id}",
+      "address": "Delivery address",
+      "phone": "Phone",
+      "total": "Total",
+      "pay": "Pay",
+      "cancel": "Cancel",
+      "receipt": "Receipt",
+      "download_pdf": "Download PDF",
+      "cancel_confirm": "Cancel this order? Items will return to stock, and if the order was paid, the money will go back to your balance.",
+      "paid": "Order paid",
+      "cancelled": "Order cancelled"
+    },
+    "checkout": {
+      "reason_inactive": "This item is no longer available - remove it from the cart",
+      "reason_stock": "Only {available} pcs. available - reduce the quantity",
+      "reason_unavailable": "Item unavailable",
+      "cart_unavailable": "Some items in your cart are unavailable. Check the highlighted items."
+    },
+    "account": {
+      "saved": "Profile saved",
+      "no_other_orders": "No other orders yet"
+    },
+    "balance": {
+      "topped_up": "Balance topped up"
     }
   },
+  "orders": {
+    "title": "My orders"
+  },
+  "status": {
+    "pending": "Awaiting payment",
+    "paid": "Paid",
+    "completed": "Completed",
+    "cancelled": "Cancelled"
+  },
+  "account": {
+    "title": "My account",
+    "profile": "Profile",
+    "name_invalid": "Enter your name (letters, spaces and hyphens only)",
+    "email_hint": "To change your email, use the “Security” section",
+    "phone": "Phone",
+    "phone_invalid": "Enter the number in international format",
+    "not_set": "Not set",
+    "address": "Default address",
+    "address_invalid": "Address must be at least 5 characters",
+    "edit_profile": "Edit profile",
+    "security": "Security",
+    "change_password": "Change password",
+    "current_password": "Current password",
+    "new_password": "New password",
+    "password_hint": "8 to 128 characters",
+    "confirm_password": "Repeat new password",
+    "change_email": "Change email",
+    "new_email": "New email",
+    "new_email_hint": "We will send a confirmation link to it",
+    "send_email": "Send email",
+    "pending_orders": "Awaiting payment",
+    "recent_orders": "Recent orders",
+    "all_orders": "All orders →"
+  },
   "checkout": {
-  "title": "Checkout",
-  "buyer": "Customer",
-  "items": "Items",
-  "total": "Total",
-  "phone": "Contact phone",
-  "phone_invalid": "Enter a valid phone number",
-  "address": "Delivery address",
-  "address_invalid": "Enter an address (at least 5 characters)",
-  "submit": "Confirm order"
+    "title": "Checkout",
+    "buyer": "Customer",
+    "items": "Items",
+    "total": "Total",
+    "phone": "Contact phone",
+    "phone_invalid": "Enter a valid phone number",
+    "address": "Delivery address",
+    "address_invalid": "Enter an address (at least 5 characters)",
+    "submit": "Confirm order"
   },
   "cart": {
     "title": "Cart"

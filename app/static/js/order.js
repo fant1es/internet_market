@@ -20,8 +20,8 @@ if (checkoutForm) {
 
     // Текст подсказки в строке корзины по коду причины с сервера
     const REASONS = {
-        inactive: () => "Товар больше недоступен - уберите его из корзины",
-        insufficient_stock: (i) => `Доступно только ${i.available} шт. - уменьшите количество`,
+        inactive: () => t("js.checkout.reason_inactive"),
+        insufficient_stock: (i) => t("js.checkout.reason_stock", { available: i.available }),
     };
 
     // Сброс формы при каждом закрытии модалки
@@ -59,11 +59,11 @@ if (checkoutForm) {
             }
             modal.hide();
             if (err.status === 409 && detail?.code === "cart_unavailable") {
-                // Подсвечиваем проблемные строки корзины
                 cartProblems.clear();
                 detail.items.forEach((i) =>
-                    cartProblems.set(i.product_id, (REASONS[i.reason] ?? (() => "Товар недоступен"))(i)));
-                showAlert(detail.message, "danger");
+                    cartProblems.set(i.product_id,
+                        (REASONS[i.reason] ?? (() => t("js.checkout.reason_unavailable")))(i)));
+                showAlert(t("js.checkout.cart_unavailable"), "danger");
                 await loadCart(); // перерисует корзину уже с подсветкой
             } else {
                 showAlert(errorText(err));
