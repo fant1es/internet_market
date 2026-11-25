@@ -31,17 +31,17 @@ if (passwordForm) {
         const errors = {};
 
         if (!current) {
-            errors.current_password = "Введите текущий пароль";
+            errors.current_password = t("js.security.current_required");
         }
         if (next.length < MIN_LEN) {
-            errors.new_password = `Пароль должен быть не короче ${MIN_LEN} символов`;
+            errors.new_password = t("js.security.too_short", { min: MIN_LEN });
         } else if (next.length > MAX_LEN) {
-            errors.new_password = `Пароль должен быть не длиннее ${MAX_LEN} символов`;
+            errors.new_password = t("js.security.too_long", { max: MAX_LEN });
         } else if (next === current) {
-            errors.new_password = "Новый пароль должен отличаться от текущего";
+            errors.new_password = t("js.security.same_as_current");
         }
         if (confirm !== next) {
-            errors.confirm_password = "Пароли не совпадают";
+            errors.confirm_password = t("js.security.mismatch");
         }
         return errors;
     }
@@ -76,7 +76,7 @@ if (passwordForm) {
                 },
             });
             closeForm();
-            showAlert("Пароль изменён. На других устройствах вы будете разлогинены", "success");
+            showAlert(t("js.security.changed"), "success");
         }
         catch (err) {
             const detail = err.data?.detail;

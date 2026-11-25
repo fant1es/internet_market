@@ -17,7 +17,7 @@ if (ceButton){
     history.replaceState(null, "", location.pathname);
 
     if (!token){
-        showBlock("error", "Ссылка недействительна: в ней нет токена");
+        showBlock("error", t("js.confirm_email.no_token"));
     }
 
     ceButton.addEventListener("click", async ()=> {

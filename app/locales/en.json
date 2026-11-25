@@ -110,7 +110,32 @@
     },
     "balance": {
       "topped_up": "Balance topped up"
+    },
+    "security": {
+      "current_required": "Enter your current password",
+      "too_short": "Password must be at least {min} characters long",
+      "too_long": "Password must be at most {max} characters long",
+      "same_as_current": "New password must differ from the current one",
+      "mismatch": "Passwords do not match",
+      "changed": "Password changed. You will be logged out on other devices"
+    },
+    "email_change": {
+      "required": "Enter the new email",
+      "invalid": "Invalid email address",
+      "same": "This is your current email",
+      "sent": "A link has been sent to {email}. Your email will change after confirmation."
+    },
+    "confirm_email": {
+      "no_token": "Invalid link: the token is missing"
     }
+  },
+  "confirm_email": {
+    "title": "Email confirmation",
+    "heading": "Confirm your new email",
+    "hint": "Click the button to finish changing your email.",
+    "button": "Confirm email",
+    "done": "Email changed. Log in with your new address.",
+    "to_account": "Go to my account"
   },
   "orders": {
     "title": "My orders"

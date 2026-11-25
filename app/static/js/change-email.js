@@ -27,16 +27,16 @@ if(emailForm){
         const errors = {};
 
         if (!email){
-            errors.new_email = "Введите новую почту";
+            errors.new_email = t("js.email_change.required");
         }
         else if (!el.new_email.validity.valid){
-            errors.new_email = "Некорректный адрес почты";
+            errors.new_email = t("js.email_change.invalid");
         }
         else if (email === currentEmail) {
-            errors.new_email = "Это ваша текущая почта";
+            errors.new_email = t("js.email_change.same");
         }
         if (!el.current_password.value){
-            errors.current_password = "Введите текущий пароль";
+            errors.current_password = t("js.security.current_required");
         }
         return errors;
     }
@@ -54,6 +54,8 @@ if(emailForm){
         const failed = Object.keys(errors);
         if (failed.length){
             failed.forEach((k)=>setFieldError(el[k], errors[k]));
+            el[failed[0]].focus();
+            return;
         }
 
         const newEmail = el.new_email.value.trim();
@@ -64,8 +66,7 @@ if(emailForm){
                     body: {new_email: newEmail, current_password: el.current_password.value}}
             );
             closeForm();
-            showAlert(`Письмо со ссылкой отправлено на ${newEmail}.` + "  Почта изменится после подтверждения.",
-                "success");
+            showAlert(t("js.email_change.sent", { email: newEmail }), "success");
             window.scrollTo({top: 0, behavior: "smooth"});
         }
         catch (err) {
