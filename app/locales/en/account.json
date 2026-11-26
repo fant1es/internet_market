@@ -1,0 +1,58 @@
+{
+  "account": {
+    "title": "My account",
+    "profile": "Profile",
+    "name_invalid": "Enter your name (letters, spaces and hyphens only)",
+    "email_hint": "To change your email, use the “Security” section",
+    "phone": "Phone",
+    "phone_invalid": "Enter the number in international format",
+    "not_set": "Not set",
+    "address": "Default address",
+    "address_invalid": "Address must be at least 5 characters",
+    "edit_profile": "Edit profile",
+    "security": "Security",
+    "change_password": "Change password",
+    "current_password": "Current password",
+    "new_password": "New password",
+    "password_hint": "8 to 128 characters",
+    "confirm_password": "Repeat new password",
+    "change_email": "Change email",
+    "new_email": "New email",
+    "new_email_hint": "We will send a confirmation link to it",
+    "send_email": "Send email",
+    "pending_orders": "Awaiting payment",
+    "recent_orders": "Recent orders",
+    "all_orders": "All orders →"
+  },
+  "confirm_email": {
+    "title": "Email confirmation",
+    "heading": "Confirm your new email",
+    "hint": "Click the button to finish changing your email.",
+    "button": "Confirm email",
+    "done": "Email changed. Log in with your new address.",
+    "to_account": "Go to my account"
+  },
+  "js": {
+    "account": {
+      "saved": "Profile saved",
+      "no_other_orders": "No other orders yet"
+    },
+    "security": {
+      "current_required": "Enter your current password",
+      "too_short": "Password must be at least {min} characters long",
+      "too_long": "Password must be at most {max} characters long",
+      "same_as_current": "New password must differ from the current one",
+      "mismatch": "Passwords do not match",
+      "changed": "Password changed. You will be logged out on other devices"
+    },
+    "email_change": {
+      "required": "Enter the new email",
+      "invalid": "Invalid email address",
+      "same": "This is your current email",
+      "sent": "A link has been sent to {email}. Your email will change after confirmation."
+    },
+    "confirm_email": {
+      "no_token": "Invalid link: the token is missing"
+    }
+  }
+}

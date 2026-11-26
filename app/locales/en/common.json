@@ -1,0 +1,46 @@
+{
+  "common": {
+    "shop": "Shop",
+    "cancel": "Cancel",
+    "close": "Close",
+    "save": "Save",
+    "loading": "Loading..."
+  },
+  "nav": {
+    "language": "Language",
+    "cart": "Cart",
+    "orders": "Orders",
+    "balance": "Balance",
+    "hello": "Hello,",
+    "login": "Log in",
+    "logout": "Log out"
+  },
+  "topup": {
+    "title": "Top up balance",
+    "current": "Current balance:",
+    "amount": "Amount",
+    "amount_invalid": "Enter an amount from 0.01 to 100,000",
+    "note": "Educational simulation: no real money is charged.",
+    "submit": "Top up"
+  },
+  "auth": {
+    "email": "Email",
+    "password": "Password",
+    "name": "Name",
+    "login_title": "Log in",
+    "login_submit": "Log in",
+    "no_account": "Don't have an account?",
+    "register_link": "Sign up",
+    "register_title": "Sign up",
+    "register_submit": "Sign up",
+    "name_hint": "Letters, spaces and hyphens only",
+    "password_hint": "6-20 characters: letters, digits, _ + -",
+    "have_account": "Already have an account?",
+    "login_link": "Log in"
+  },
+  "js": {
+    "balance": {
+      "topped_up": "Balance topped up"
+    }
+  }
+}

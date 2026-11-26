@@ -1,0 +1,70 @@
+{
+  "catalog": {
+    "title": "Каталог",
+    "search_placeholder": "Поиск по названию...",
+    "all_categories": "Все категории",
+    "filters": "Фильтры",
+    "reset": "Сбросить",
+    "sort": "Сортировка",
+    "sort_newest": "Сначала новые",
+    "sort_price_asc": "Сначала дешёвые",
+    "sort_price_desc": "Сначала дорогие",
+    "price": "Цена",
+    "from": "от",
+    "to": "до",
+    "discount_only": "Только со скидкой",
+    "brand": "Бренд"
+  },
+  "product": {
+    "title": "Товар",
+    "back": "← Назад в каталог"
+  },
+  "js": {
+    "catalog": {
+      "no_results": "Ничего не найдено",
+      "no_photo": "Нет фото",
+      "add_to_cart": "В корзину",
+      "out_of_stock": "Нет в наличии",
+      "no_brands": "Нет брендов",
+      "choose_category": "Выберите категорию, чтобы фильтровать по характеристикам.",
+      "price_from": "от {value}",
+      "price_to": "до {value}"
+    },
+    "product": {
+      "attributes": "Характеристики",
+      "sku": "Артикул",
+      "category": "Категория",
+      "brand": "Бренд",
+      "in_stock": "В наличии",
+      "pcs": "{count} шт.",
+      "description": "Описание",
+      "no_description": "Описание отсутствует",
+      "not_found": "Товар не найден"
+    },
+    "reviews": {
+      "title": "Отзывы",
+      "none_yet": "Пока нет отзывов",
+      "count": "Отзывов: {count}",
+      "edited": "(изменён)",
+      "pros": "Достоинства",
+      "cons": "Недостатки",
+      "edit": "Изменить",
+      "delete": "Удалить",
+      "login_link": "Войдите",
+      "login_rest": ", чтобы оставить отзыв.",
+      "already_reviewed": "Вы уже оставили отзыв на этот товар.",
+      "buyers_only": "Отзывы могут оставлять только покупатели этого товара.",
+      "form_edit": "Изменить отзыв",
+      "form_new": "Ваш отзыв",
+      "rating": "Оценка (1–5)",
+      "heading": "Заголовок",
+      "body": "Отзыв",
+      "save": "Сохранить",
+      "submit": "Отправить",
+      "cancel": "Отмена",
+      "delete_confirm": "Удалить отзыв?",
+      "deleted": "Отзыв удалён",
+      "saved": "Отзыв сохранён"
+    }
+  }
+}

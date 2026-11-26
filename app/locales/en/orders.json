@@ -1,0 +1,28 @@
+{
+  "orders": {
+    "title": "My orders"
+  },
+  "status": {
+    "pending": "Awaiting payment",
+    "paid": "Paid",
+    "completed": "Completed",
+    "cancelled": "Cancelled"
+  },
+  "js": {
+    "orders": {
+      "title": "My orders",
+      "empty": "No orders yet",
+      "order_no": "Order #{id}",
+      "address": "Delivery address",
+      "phone": "Phone",
+      "total": "Total",
+      "pay": "Pay",
+      "cancel": "Cancel",
+      "receipt": "Receipt",
+      "download_pdf": "Download PDF",
+      "cancel_confirm": "Cancel this order? Items will return to stock, and if the order was paid, the money will go back to your balance.",
+      "paid": "Order paid",
+      "cancelled": "Order cancelled"
+    }
+  }
+}

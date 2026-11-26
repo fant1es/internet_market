@@ -1,0 +1,70 @@
+{
+  "catalog": {
+    "title": "Catalog",
+    "search_placeholder": "Search by name...",
+    "all_categories": "All categories",
+    "filters": "Filters",
+    "reset": "Reset",
+    "sort": "Sort by",
+    "sort_newest": "Newest first",
+    "sort_price_asc": "Price: low to high",
+    "sort_price_desc": "Price: high to low",
+    "price": "Price",
+    "from": "from",
+    "to": "to",
+    "discount_only": "On sale only",
+    "brand": "Brand"
+  },
+  "product": {
+    "title": "Product",
+    "back": "← Back to catalog"
+  },
+  "js": {
+    "catalog": {
+      "no_results": "Nothing found",
+      "no_photo": "No photo",
+      "add_to_cart": "Add to cart",
+      "out_of_stock": "Out of stock",
+      "no_brands": "No brands",
+      "choose_category": "Select a category to filter by attributes.",
+      "price_from": "from {value}",
+      "price_to": "to {value}"
+    },
+    "product": {
+      "attributes": "Characteristics",
+      "sku": "SKU",
+      "category": "Category",
+      "brand": "Brand",
+      "in_stock": "In stock",
+      "pcs": "{count} pcs.",
+      "description": "Description",
+      "no_description": "No description",
+      "not_found": "Product not found"
+    },
+    "reviews": {
+      "title": "Reviews",
+      "none_yet": "No reviews yet",
+      "count": "Reviews: {count}",
+      "edited": "(edited)",
+      "pros": "Pros",
+      "cons": "Cons",
+      "edit": "Edit",
+      "delete": "Delete",
+      "login_link": "Log in",
+      "login_rest": " to leave a review.",
+      "already_reviewed": "You have already reviewed this product.",
+      "buyers_only": "Only customers who bought this product can leave a review.",
+      "form_edit": "Edit review",
+      "form_new": "Your review",
+      "rating": "Rating (1–5)",
+      "heading": "Title",
+      "body": "Review",
+      "save": "Save",
+      "submit": "Submit",
+      "cancel": "Cancel",
+      "delete_confirm": "Delete this review?",
+      "deleted": "Review deleted",
+      "saved": "Review saved"
+    }
+  }
+}
