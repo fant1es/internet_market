@@ -3,7 +3,8 @@
     "shop": "Shop",
     "cancel": "Cancel",
     "close": "Close",
-    "save": "Save"
+    "save": "Save",
+    "loading": "Loading..."
   },
   "nav": {
     "language": "Language",
@@ -65,7 +66,15 @@
       "price_to": "to {value}"
     },
     "product": {
-      "attributes": "Characteristics"
+      "attributes": "Characteristics",
+      "sku": "SKU",
+      "category": "Category",
+      "brand": "Brand",
+      "in_stock": "In stock",
+      "pcs": "{count} pcs.",
+      "description": "Description",
+      "no_description": "No description",
+      "not_found": "Product not found"
     },
     "cart": {
       "in_cart": "In cart",
@@ -127,7 +136,36 @@
     },
     "confirm_email": {
       "no_token": "Invalid link: the token is missing"
+    },
+    "reviews": {
+      "title": "Reviews",
+      "none_yet": "No reviews yet",
+      "count": "Reviews: {count}",
+      "edited": "(edited)",
+      "pros": "Pros",
+      "cons": "Cons",
+      "edit": "Edit",
+      "delete": "Delete",
+      "login_link": "Log in",
+      "login_rest": " to leave a review.",
+      "already_reviewed": "You have already reviewed this product.",
+      "buyers_only": "Only customers who bought this product can leave a review.",
+      "form_edit": "Edit review",
+      "form_new": "Your review",
+      "rating": "Rating (1–5)",
+      "heading": "Title",
+      "body": "Review",
+      "save": "Save",
+      "submit": "Submit",
+      "cancel": "Cancel",
+      "delete_confirm": "Delete this review?",
+      "deleted": "Review deleted",
+      "saved": "Review saved"
     }
+  },
+  "product": {
+    "title": "Product",
+    "back": "← Back to catalog"
   },
   "confirm_email": {
     "title": "Email confirmation",

@@ -16,14 +16,14 @@ function renderProduct(p, attrs) {
           ${img
             ? `<img src="${escapeHtml(img)}" alt="${escapeHtml(p.name)}" 
                 style="max-height: 480px; object-fit: contain;" class="img-fluid rounded" loading="lazy">`
-            : `<div class="bg-light text-center text-muted py-5 rounded">Нет фото</div>`}
+            : `<div class="bg-light text-center text-muted py-5 rounded">${t("js.catalog.no_photo")}</div>`}
         </div>
 
         <div class="col-md-7">
           <div class="d-flex align-items-start gap-2 mb-1">
             <h1 class="h3 mb-0">${escapeHtml(p.name)}</h1>
           </div>
-          <div class="text-muted mb-3">Артикул: ${escapeHtml(p.sku)}</div>
+          <div class="text-muted mb-3">${t("js.product.sku")}: ${escapeHtml(p.sku)}</div>
 
           <div class="fs-3 fw-bold mb-3">
             ${formatPrice(p.price)}
@@ -31,21 +31,21 @@ function renderProduct(p, attrs) {
           </div>
 
           <dl class="row mb-3">
-            <dt class="col-sm-3">Категория</dt>
+            <dt class="col-sm-3">${t("js.product.category")}</dt>
             <dd class="col-sm-9">${escapeHtml(categoryName)}</dd>
-            <dt class="col-sm-3">Бренд</dt>
+            <dt class="col-sm-3">${t("js.product.brand")}</dt>
             <dd class="col-sm-9">${escapeHtml(brandName)}</dd>
-            <dt class="col-sm-3">В наличии</dt>
+            <dt class="col-sm-3">${t("js.product.in_stock")}</dt>
             <dd class="col-sm-9 ${inStock ? "" : "text-danger"}">
-              ${inStock ? `${p.stock_quantity} шт.` : "Нет в наличии"}
+              ${inStock ? t("js.product.pcs", { count: p.stock_quantity }) : t("js.catalog.out_of_stock")}
             </dd>
           </dl>
 
-          <h2 class="h6">Описание</h2>
-          <p style="white-space: pre-line;">${escapeHtml(p.description ?? "Описание отсутствует")}</p>
+          <h2 class="h6">${t("js.product.description")}</h2>
+          <p style="white-space: pre-line;">${escapeHtml(p.description ?? t("js.product.no_description"))}</p>
           ${inStock
-            ? `<button class="btn btn-primary add-to-cart" data-id="${p.id}">В корзину</button>`
-            : `<button class="btn btn-secondary" disabled>Нет в наличии</button>`}
+              ? `<button class="btn btn-primary add-to-cart" data-id="${p.id}">${t("js.catalog.add_to_cart")}</button>`
+              : `<button class="btn btn-secondary" disabled>${t("js.catalog.out_of_stock")}</button>`}
         </div>
       </div>
       ${renderAttributes(attrs)}`;
@@ -72,7 +72,7 @@ async function loadProduct() {
     catch (err) {
         if (err.status === 404) {
             // Товара нет или он скрыт: это не сбой, а штатная ситуация
-            productBox.innerHTML = `<div class="alert alert-warning">Товар не найден</div>`;
+            productBox.innerHTML = `<div class="alert alert-warning">${t("js.product.not_found")}</div>`;   
         }
         else {
             showAlert(errorText(err));

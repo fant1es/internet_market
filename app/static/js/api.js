@@ -142,7 +142,7 @@ function slugify(text) {
 
 
 function renderAttributes(attrs) {
-    if (!attrs.length) return "";   // Если у товара нет характеристик, то блок не показываем
+    if (!attrs.length) return "";
 
     const rows = attrs.map((a) => `
         <div class="row py-2 border-bottom">

@@ -9,6 +9,8 @@
     const PAGE_SIZE = 10;
     const FIELDS = ["rating", "title", "body", "pros", "cons"];
 
+    const LOCALE = window.LANG === "en" ? "en-GB" : "ru-RU";
+
     const state = {
         page: 1,
         items: [],
@@ -17,7 +19,7 @@
     };
 
     box.innerHTML = `
-      <h2 class="h4 mb-3">Отзывы</h2>
+      <h2 class="h4 mb-3">${t("js.reviews.title")}</h2>
       <div id="reviews-summary" class="mb-3"></div>
       <div id="reviews-form" class="mb-4"></div>
       <div id="reviews-list"></div>
@@ -30,16 +32,16 @@
 
     // --- Отрисовка --------------------------------------------
     function renderSummary(summary) {
-        summaryBox.innerHTML = summary.average === null
-            ? `<span class="text-muted">Пока нет отзывов</span>`
-            : `<span class="fs-4 fw-bold">★ ${Number(summary.average).toFixed(1)}</span>
-               <span class="text-muted ms-2">Отзывов: ${summary.count}</span>`;
+    summaryBox.innerHTML = summary.average === null
+        ? `<span class="text-muted">${t("js.reviews.none_yet")}</span>`
+        : `<span class="fs-4 fw-bold">★ ${Number(summary.average).toFixed(1)}</span>
+           <span class="text-muted ms-2">${t("js.reviews.count", { count: summary.count })}</span>`;
     }
 
     function renderReview(r) {
         const own = r.user.id === userId;
-        const date = new Date(r.created_at).toLocaleDateString("ru-RU");
-        const edited = r.updated_at !== r.created_at ? " (изменён)" : "";
+        const date = new Date(r.created_at).toLocaleDateString(LOCALE);
+        const edited = r.updated_at !== r.created_at ? ` ${t("js.reviews.edited")}` : "";
 
         return `
           <div class="border rounded p-3 mb-3">
@@ -51,16 +53,16 @@
               <div class="text-muted small">${escapeHtml(r.user.name)} · ${date}${edited}</div>
             </div>
             <p class="mt-2 mb-2" style="white-space: pre-line;">${escapeHtml(r.body)}</p>
-            ${r.pros ? `<div><span class="text-success fw-bold">Достоинства:</span>
+            ${r.pros ? `<div><span class="text-success fw-bold">${t("js.reviews.pros")}:</span>
                 <span style="white-space: pre-line;">${escapeHtml(r.pros)}</span></div>` : ""}
-            ${r.cons ? `<div><span class="text-danger fw-bold">Недостатки:</span>
+            ${r.cons ? `<div><span class="text-danger fw-bold">${t("js.reviews.cons")}:</span>
                 <span style="white-space: pre-line;">${escapeHtml(r.cons)}</span></div>` : ""}
             ${own || isAdmin ? `
               <div class="mt-2">
                 ${own ? `<button class="btn btn-sm btn-outline-secondary me-2"
-                          data-action="edit" data-id="${r.id}">Изменить</button>` : ""}
+                          data-action="edit" data-id="${r.id}">${t("js.reviews.edit")}</button>` : ""}
                 <button class="btn btn-sm btn-outline-danger"
-                        data-action="delete" data-id="${r.id}">Удалить</button>
+                        data-action="delete" data-id="${r.id}">${t("js.reviews.delete")}</button>
               </div>` : ""}
           </div>`;
     }
@@ -85,9 +87,9 @@
             }
             if (!can.can_review) {
                 const msg = can.reason === "already_reviewed"
-                    ? "Вы уже оставили отзыв на этот товар."
-                    : "Отзывы могут оставлять только покупатели этого товара.";
-                formBox.innerHTML = `<div class="text-muted">${msg}</div>`;
+                    ? t("js.reviews.already_reviewed")
+                    : t("js.reviews.buyers_only");
+                formBox.innerHTML = `<div class="text-muted"><a href="/login">${t("js.reviews.login_link")}</a>${t("js.reviews.login_rest")}</div>`;
                 return;
             }
         }
@@ -95,40 +97,40 @@
         const r = editing ?? {};
         formBox.innerHTML = `
           <form class="border rounded p-3" novalidate>
-            <h3 class="h6 mb-3">${editing ? "Изменить отзыв" : "Ваш отзыв"}</h3>
+            <h3 class="h6 mb-3">${editing ? t("js.reviews.form_edit") : t("js.reviews.form_new")}</h3>
             <div class="mb-3">
-              <label class="form-label" for="rv-rating">Оценка (1–5)</label>
+              <label class="form-label" for="rv-rating">${t("js.reviews.rating")}</label>
               <input id="rv-rating" name="rating" type="number" step="0.1" min="1" max="5"
                      class="form-control" style="max-width: 120px;" required
                      value="${r.rating !== undefined ? Number(r.rating).toFixed(1) : ""}">
               <div class="invalid-feedback"></div>
             </div>
             <div class="mb-3">
-              <label class="form-label" for="rv-title">Заголовок</label>
+              <label class="form-label" for="rv-title">${t("js.reviews.heading")}</label>
               <input id="rv-title" name="title" type="text" maxlength="150" class="form-control" required
                      value="${escapeHtml(r.title ?? "")}">
               <div class="invalid-feedback"></div>
             </div>
             <div class="mb-3">
-              <label class="form-label" for="rv-body">Отзыв</label>
+              <label class="form-label" for="rv-body">${t("js.reviews.body")}</label>
               <textarea id="rv-body" name="body" rows="4" maxlength="5000" class="form-control"
                         required>${escapeHtml(r.body ?? "")}</textarea>
               <div class="invalid-feedback"></div>
             </div>
             <div class="mb-3">
-              <label class="form-label" for="rv-pros">Достоинства</label>
+              <label class="form-label" for="rv-pros">${t("js.reviews.pros")}</label>
               <textarea id="rv-pros" name="pros" rows="2" maxlength="2000"
                         class="form-control">${escapeHtml(r.pros ?? "")}</textarea>
               <div class="invalid-feedback"></div>
             </div>
             <div class="mb-3">
-              <label class="form-label" for="rv-cons">Недостатки</label>
+              <label class="form-label" for="rv-cons">${t("js.reviews.cons")}</label>
               <textarea id="rv-cons" name="cons" rows="2" maxlength="2000"
                         class="form-control">${escapeHtml(r.cons ?? "")}</textarea>
               <div class="invalid-feedback"></div>
             </div>
-            <button type="submit" class="btn btn-primary">${editing ? "Сохранить" : "Отправить"}</button>
-            ${editing ? `<button type="button" class="btn btn-link" data-action="cancel">Отмена</button>` : ""}
+            <button type="submit" class="btn btn-primary">${editing ? t("js.reviews.save") : t("js.reviews.submit")}</button>
+            ${editing ? `<button type="button" class="btn btn-link" data-action="cancel">${t("js.reviews.cancel")}</button>` : ""}
           </form>`;
     }
 
@@ -183,11 +185,11 @@
             formBox.scrollIntoView({ behavior: "smooth", block: "center" });
         }
         else if (btn.dataset.action === "delete") {
-            if (!confirm("Удалить отзыв?")) return;
+            if (!confirm(t("js.reviews.delete_confirm"))) return;
             try {
                 await api(`/reviews/${id}`, { method: "DELETE" });
                 if (state.editing?.id === id) state.editing = null;
-                showAlert("Отзыв удалён", "success");
+                showAlert(t("js.reviews.deleted"), "success");
                 await Promise.all([loadReviews(), loadCanReview()]);
                 renderForm();
             }
@@ -226,7 +228,7 @@
                 state.page = 1;   // новые отзывы идут первыми
             }
             state.editing = null;
-            showAlert("Отзыв сохранён", "success");
+            showAlert(t("js.reviews.saved"), "success");
             await Promise.all([loadReviews(), loadCanReview()]);
             renderForm();
         }

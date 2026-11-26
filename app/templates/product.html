@@ -1,13 +1,13 @@
 {% extends "base.html" %}
 
-{% block title %}Товар{% endblock %}
+{% block title %}{{ t('product.title') }}{% endblock %}
 
 {% block content %}
-  <a href="/" class="btn btn-link px-0 mb-3">← Назад в каталог</a>
+  <a href="/" class="btn btn-link px-0 mb-3">{{ t('product.back') }}</a>
 
   {# Обновление тегов в js будет #}
   <div id="product" data-id="{{ product_id }}">
-    <div class="text-muted">Загрузка...</div>
+    <div class="text-muted">{{ t('common.loading') }}</div>
   </div>
 
   {# Содержимое рисует reviews.js #}
