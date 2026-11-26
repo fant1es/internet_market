@@ -11,23 +11,23 @@ function renderCard(p) {
     const img = productImageUrl(p);
     const inStock = p.stock_quantity > 0;
 
-    document.title = `Админка: ${p.name}`;
+    document.title = t("js.admin.page_title", { name: p.name });
     card.innerHTML = `
       <div class="row g-4">
         <div class="col-md-5">
           ${img
             ? `<img src="${img}" alt="${escapeHtml(p.name)}" class="img-fluid rounded">`
-            : `<div class="bg-light text-center text-muted py-5 rounded">Нет фото</div>`}
+            : `<div class="bg-light text-center text-muted py-5 rounded">${t("js.catalog.no_photo")}</div>`}
         </div>
 
         <div class="col-md-7">
           <div class="d-flex align-items-start gap-2 mb-1">
             <h1 class="h3 mb-0">${escapeHtml(p.name)}</h1>
             <span class="badge ${p.is_active ? "bg-success" : "bg-secondary"} mt-1">
-              ${p.is_active ? "Виден" : "Скрыт"}
+              ${p.is_active ? t("js.admin.visible") : t("js.admin.hidden")}
             </span>
           </div>
-          <div class="text-muted mb-3">Артикул: ${escapeHtml(p.sku)}</div>
+          <div class="text-muted mb-3">${t("js.product.sku")}: ${escapeHtml(p.sku)}</div>
 
           <div class="fs-3 fw-bold mb-3">
             ${formatPrice(p.price)}
@@ -35,23 +35,23 @@ function renderCard(p) {
           </div>
 
           <dl class="row mb-3">
-            <dt class="col-sm-3">Категория</dt>
+            <dt class="col-sm-3">${t("js.product.category")}</dt>
             <dd class="col-sm-9">${escapeHtml(categoryName)}</dd>
-            <dt class="col-sm-3">Бренд</dt>
+            <dt class="col-sm-3">${t("js.product.brand")}</dt>
             <dd class="col-sm-9">${escapeHtml(brandName)}</dd>
-            <dt class="col-sm-3">В наличии</dt>
+            <dt class="col-sm-3">${t("js.product.in_stock")}</dt>
             <dd class="col-sm-9 ${inStock ? "" : "text-danger"}">
-              ${inStock ? `${p.stock_quantity} шт.` : "Нет в наличии"}
+              ${inStock ? t("js.product.pcs", { count: p.stock_quantity }) : t("js.catalog.out_of_stock")}
             </dd>
           </dl>
 
-          <h2 class="h6">Описание</h2>
-          <p style="white-space: pre-line;">${escapeHtml(p.description ?? "Описание отсутствует")}</p>
+          <h2 class="h6">${t("js.product.description")}</h2>
+          <p style="white-space: pre-line;">${escapeHtml(p.description ?? t("js.product.no_description"))}</p>
 
           <div class="d-flex gap-2 mt-4">
-            <a href="/admin/product/${p.id}/edit" class="btn btn-primary">Изменить</a>
+            <a href="/admin/product/${p.id}/edit" class="btn btn-primary">${t("js.admin.edit")}</a>
             <button id="toggle-active" class="btn btn-outline-secondary" data-active="${p.is_active}">
-              ${p.is_active ? "Скрыть" : "Показать"}
+              ${p.is_active ? t("js.admin.hide") : t("js.admin.show")}
             </button>
           </div>
         </div>
@@ -78,7 +78,7 @@ async function loadProduct() {
     }
     catch (err) {
         if (err.status === 404) {
-            card.innerHTML = `<div class="alert alert-warning">Товар не найден</div>`;
+            card.innerHTML = `<div class="alert alert-warning">${t("js.product.not_found")}</div>`;
         }
         else {
             showAlert(errorText(err));

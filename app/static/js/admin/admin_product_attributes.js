@@ -14,19 +14,19 @@ function createAttributesEditor(box) {
         lastSelected = selectedIds;
 
         if (!categoryId) {
-            hint("Выберите категорию, чтобы задать характеристики.");
+            hint(t("js.admin.attrs_choose_category"));
             ready = true;
             return;
         }
 
-        hint("Загрузка...");
+        hint(t("js.admin.loading"));
         try {
             // Здесь отдаются все характеристики, в том числе ещё без вариантов
             const attributes = await api(`/admin/attributes?category_id=${Number(categoryId)}`);
             if (requestId !== lastRequestId) return; // пришёл устаревший ответ
 
             if (attributes.length === 0) {
-                hint("У этой категории пока нет характеристик. Добавьте их кнопкой «Управление».");
+                hint(t("js.admin.attrs_empty"));
                 ready = true;
                 return;
             }
@@ -37,12 +37,12 @@ function createAttributesEditor(box) {
                   <label for="attr-${i}" class="form-label">${escapeHtml(a.name)}</label>
                   ${a.options.length
                     ? `<select id="attr-${i}" class="form-select attr-select">
-                         <option value="">Не указано</option>
+                         <option value="">${t("js.admin.attrs_not_set")}</option>
                          ${a.options.map((o) => `
                            <option value="${o.id}" ${selected.has(o.id) ? "selected" : ""}>${escapeHtml(o.value)}</option>`).join("")}
                        </select>`
                     : `<select id="attr-${i}" class="form-select" disabled>
-                         <option>Нет вариантов: добавьте в «Управление»</option>
+                         <option>${t("js.admin.attrs_no_options")}</option>
                        </select>`}
                 </div>`).join("") + `</div>`;
             ready = true;

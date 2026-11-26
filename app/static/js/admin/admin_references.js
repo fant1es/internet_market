@@ -2,15 +2,15 @@
 const CONFIG = {
     brands: {
         url: "/admin/brands",
-        hasActive: true,   // у брендов есть скрытие, у категорий нет
-        createTitle: "Новый бренд",
-        editTitle: "Редактирование бренда",
+        hasActive: true,
+        createTitle: "js.admin.new_brand",
+        editTitle: "js.admin.edit_brand",
     },
     categories: {
         url: "/admin/categories",
         hasActive: false,
-        createTitle: "Новая категория",
-        editTitle: "Редактирование категории",
+        createTitle: "js.admin.new_category",
+        editTitle: "js.admin.edit_category",
     },
 };
 
@@ -40,7 +40,7 @@ function renderTable() {
     statusCol.classList.toggle("d-none", !cfg.hasActive);
 
     if (items.length === 0) {
-        body.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-5">Пока ничего нет</td></tr>`;
+        body.innerHTML = `<tr><td colspan="5" class="text-center text-muted py-5">${t("js.admin.refs_empty")}</td></tr>`;
         return;
     }
 
@@ -52,18 +52,18 @@ function renderTable() {
       ${cfg.hasActive ? `
       <td>
         <span class="badge ${item.is_active ? "bg-success" : "bg-secondary"}">
-          ${item.is_active ? "Виден" : "Скрыт"}
+          ${item.is_active ? t("js.admin.visible") : t("js.admin.hidden")}
         </span>
       </td>` : ""}
       <td class="text-end text-nowrap">
         ${kind === "categories" ? `
-        <button class="btn btn-outline-dark btn-sm" data-action="attributes" data-id="${item.id}">Характеристики</button>` : ""}
-        <button class="btn btn-outline-primary btn-sm" data-action="edit" data-id="${item.id}">Изменить</button>
+        <button class="btn btn-outline-dark btn-sm" data-action="attributes" data-id="${item.id}">${t("js.product.attributes")}</button>` : ""}
+        <button class="btn btn-outline-primary btn-sm" data-action="edit" data-id="${item.id}">${t("js.admin.edit")}</button>
         ${cfg.hasActive ? `
         <button class="btn btn-outline-secondary btn-sm" data-action="toggle" data-id="${item.id}">
-          ${item.is_active ? "Скрыть" : "Показать"}
+          ${item.is_active ? t("js.admin.hide") : t("js.admin.show")}
         </button>` : ""}
-        <button class="btn btn-outline-danger btn-sm" data-action="delete" data-id="${item.id}">Удалить</button>
+        <button class="btn btn-outline-danger btn-sm" data-action="delete" data-id="${item.id}">${t("js.admin.delete")}</button>
       </td>
     </tr>`).join("");
 }
@@ -85,7 +85,7 @@ function openModal(item = null) {
     const cfg = CONFIG[kind];
 
     editingId = item ? item.id : null;
-    modalTitle.textContent = item ? cfg.editTitle : cfg.createTitle;
+    modalTitle.textContent = t(item ? cfg.editTitle : cfg.createTitle);
     nameInput.value = item?.name ?? "";
     slugInput.value = item?.slug ?? "";
     slugTouched = item !== null;   // у существующей записи slug не меняем сам
@@ -176,7 +176,7 @@ body.addEventListener("click", async (e) => {
         return;
     }
 
-    if (btn.dataset.action === "delete" && !confirm(`Удалить «${item.name}»?`)) return;
+    if (btn.dataset.action === "delete" && !confirm(t("js.admin.delete_ref_confirm", { name: item.name }))) return;
 
     btn.disabled = true;
     try {
@@ -185,7 +185,7 @@ body.addEventListener("click", async (e) => {
         }
         else {
             await api(`${cfg.url}/${id}`, { method: "DELETE" });
-            showAlert("Удалено", "success");
+            showAlert(t("js.admin.deleted"), "success");
         }
         await load();
     }

@@ -41,7 +41,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     function updateFileName() {
-        fileNameLabel.textContent = selectedFile ? selectedFile.name : "Файл не выбран";
+        fileNameLabel.textContent = selectedFile ? selectedFile.name : t("js.admin.no_file");
         fileNameLabel.classList.toggle("text-muted", !selectedFile);
     }
 
@@ -64,11 +64,11 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (!file) return;
 
         if (!ALLOWED_TYPES.includes(file.type)) {
-            showAlert("Допустимы только JPEG, PNG и WebP", "warning");
+            showAlert(t("js.admin.only_types"), "warning");
             return;
         }
         if (file.size > MAX_IMAGE_BYTES) {
-            showAlert("Файл слишком большой (максимум 5 МБ)", "warning");
+            showAlert(t("js.admin.too_big"), "warning");
             return;
         }
 
@@ -84,8 +84,8 @@ document.addEventListener("DOMContentLoaded", async () => {
             api("/categories"),
             api("/brands"),
         ]);
-        fillSelect(categorySelect, "Выберите категорию...", categories);
-        fillSelect(brandSelect, "Без бренда", brands);
+        fillSelect(categorySelect, t("js.admin.select_category"), categories);
+        fillSelect(brandSelect, t("js.admin.brand_none"), brands);
 
         // Подгрузка атрибутов
         attrs = createAttributesEditor(attributesBox);
@@ -95,7 +95,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         // Окно управления характеристиками: после закрытия обновляем блок, сохраняя выбор
         document.getElementById("manage-attrs").addEventListener("click", () => {
             if (!categorySelect.value) {
-                showAlert("Сначала выберите категорию", "warning");
+                showAlert(t("js.admin.category_first"), "warning");
                 return;
             }
             const name = categorySelect.selectedOptions[0].textContent.trim();
@@ -119,12 +119,12 @@ document.addEventListener("DOMContentLoaded", async () => {
         const oldPrice = oldPriceRaw === "" ? null : Number(oldPriceRaw);
 
         if (oldPrice !== null && oldPrice <= price) {
-            showAlert("Старая цена должна быть больше текущей", "warning");
+            showAlert(t("js.admin.old_price_error"), "warning");
             return;
         }
 
         if (!attrs || !attrs.isReady()) {
-            showAlert("Характеристики ещё не загружены, подождите секунду", "warning");
+            showAlert(t("js.admin.attrs_not_ready"), "warning");
             return;
         }
 
@@ -165,11 +165,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 await api(`/admin/products/${createdId}/image`, { method: "POST", formData: fd });
             }
             catch (err) {
-                showAlert(
-                    `Товар создан, но фото не загрузилось: ${errorText(err)}. `
-                    + "Выберите другой файл и нажмите кнопку ещё раз или оставьте всё как есть и вернитесь к списку.",
-                    "warning",
-                );
+                showAlert(t("js.admin.photo_failed_new", { error: errorText(err) }), "warning");
                 submitBtn.disabled = false;
                 return;   // остаёмся на странице, повторное нажатие обновит товар, а не создаст копию
             }

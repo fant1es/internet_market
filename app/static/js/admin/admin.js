@@ -58,14 +58,14 @@ function renderRow(p) {
       <td class="text-end ${stockClass}">${p.stock_quantity}</td>
       <td>
         <span class="badge ${p.is_active ? "bg-success" : "bg-secondary"}">
-          ${p.is_active ? "Виден" : "Скрыт"}
+          ${p.is_active ? t("js.admin.visible") : t("js.admin.hidden")}
         </span>
       </td>
       <td class="text-end text-nowrap">
-        <a href="/admin/product/${p.id}/edit" class="btn btn-outline-primary btn-sm">Изменить</a>
+        <a href="/admin/product/${p.id}/edit" class="btn btn-outline-primary btn-sm">${t("js.admin.edit")}</a>
         <button class="btn btn-outline-secondary btn-sm toggle-active"
                 data-id="${p.id}" data-active="${p.is_active}">
-          ${p.is_active ? "Скрыть" : "Показать"}
+          ${p.is_active ? t("js.admin.hide") : t("js.admin.show")}
         </button>
       </td>
     </tr>`;
@@ -73,7 +73,7 @@ function renderRow(p) {
 
 function renderProducts(items) {
     if (items.length === 0) {
-        productsBody.innerHTML = `<tr><td colspan="9" class="text-center text-muted py-5">Ничего не найдено</td></tr>`;
+        productsBody.innerHTML = `<tr><td colspan="9" class="text-center text-muted py-5">${t("js.catalog.no_results")}</td></tr>`;
         return;
     }
     productsBody.innerHTML = items.map(renderRow).join("");
@@ -171,8 +171,8 @@ async function loadPriceBounds() {
         state.maxPrice = "";
         minPriceInput.value = "";
         maxPriceInput.value = "";
-        minPriceInput.placeholder = `от ${bounds.min}`;
-        maxPriceInput.placeholder = `до ${bounds.max}`;
+        minPriceInput.placeholder = t("js.catalog.price_from", { value: bounds.min });
+        maxPriceInput.placeholder = t("js.catalog.price_to", { value: bounds.max });
         minPriceInput.classList.remove("is-invalid");
         maxPriceInput.classList.remove("is-invalid");
         updateSlider();
@@ -261,8 +261,8 @@ async function loadBrands() {
             </div>`;
 
         brandsBox.innerHTML =
-            radio("brand-all", "", "Все бренды", true) +
-            radio("brand-none", "none", "Без бренда") +
+            radio("brand-all", "", t("js.admin.brand_all"), true) +
+            radio("brand-none", "none", t("js.admin.brand_none")) +
             brands.map((b) => radio(`brand-${b.id}`, b.id, escapeHtml(b.name))).join("");
     }
     catch (err) {

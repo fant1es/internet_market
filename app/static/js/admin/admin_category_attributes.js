@@ -22,7 +22,7 @@
 
     function render() {
         if (attributes.length === 0) {
-            listEl.innerHTML = `<p class="text-muted text-center py-4 mb-0">Характеристик пока нет</p>`;
+            listEl.innerHTML = `<p class="text-muted text-center py-4 mb-0">${t("js.admin.attrs_none")}</p>`;
             return;
         }
 
@@ -31,8 +31,8 @@
           <div class="card-header d-flex justify-content-between align-items-center">
             <strong>${escapeHtml(a.name)}</strong>
             <div class="text-nowrap">
-              <button type="button" class="btn btn-outline-primary btn-sm" data-action="rename-attr">Переименовать</button>
-              <button type="button" class="btn btn-outline-danger btn-sm" data-action="delete-attr">Удалить</button>
+              <button type="button" class="btn btn-outline-primary btn-sm" data-action="rename-attr">${t("js.admin.rename")}</button>
+              <button type="button" class="btn btn-outline-danger btn-sm" data-action="delete-attr">${t("js.admin.delete")}</button>
             </div>
           </div>
           <div class="card-body">
@@ -41,17 +41,17 @@
                 ? a.options.map((o) => `
                   <span class="btn-group btn-group-sm" role="group" data-option-id="${o.id}">
                     <button type="button" class="btn btn-outline-secondary" data-action="rename-option"
-                            title="Нажмите, чтобы переименовать. Выбрано у товаров: ${o.products_count}">
+                            title="${t("js.admin.option_hint", { count: o.products_count })}">
                       ${escapeHtml(o.value)}
                     </button>
                     <button type="button" class="btn btn-outline-danger" data-action="delete-option"
-                            aria-label="Удалить вариант">×</button>
+                            aria-label="${t("js.admin.option_delete_aria")}">×</button>
                   </span>`).join("")
-                : `<span class="text-muted small">Вариантов пока нет</span>`}
+                : `<span class="text-muted small">${t("js.admin.options_none")}</span>`}
             </div>
             <form class="option-form input-group input-group-sm" novalidate>
-              <input type="text" class="form-control" maxlength="100" required placeholder="Новый вариант">
-              <button type="submit" class="btn btn-outline-primary">Добавить</button>
+              <input type="text" class="form-control" maxlength="100" required placeholder="${t("js.admin.new_option")}">
+              <button type="submit" class="btn btn-outline-primary">${t("js.admin.add")}</button>
             </form>
           </div>
         </div>`).join("");
@@ -81,9 +81,9 @@
         attributes = [];
         onClose = callback;
         changed = false;
-        titleEl.textContent = `Характеристики: ${category.name}`;
+        titleEl.textContent = t("js.admin.attrs_modal_title", { name: category.name });
         newName.value = "";
-        listEl.innerHTML = `<p class="text-muted text-center py-4 mb-0">Загрузка...</p>`;
+        listEl.innerHTML = `<p class="text-muted text-center py-4 mb-0">${t("js.admin.loading")}</p>`;
         clearError();
         modal.show();
 
@@ -104,7 +104,7 @@
 
         const slug = slugify(name);
         if (!slug) {
-            showError("В названии должны быть буквы или цифры");
+            showError(t("js.admin.slug_required"));
             return;
         }
 
@@ -137,28 +137,28 @@
 
         switch (btn.dataset.action) {
             case "rename-attr": {
-                const name = prompt("Название характеристики", attr.name)?.trim();
+                const name = prompt(t("js.admin.prompt_attr"), attr.name)?.trim();
                 if (!name || name === attr.name) return;
                 // slug не меняем: он нужен только для уникальности внутри категории
                 run(() => api(`/admin/attributes/${attr.id}`, { method: "PUT", body: { name, slug: attr.slug } }));
                 break;
             }
             case "delete-attr": {
-                let text = `Удалить характеристику «${attr.name}» вместе со всеми вариантами?`;
-                if (attr.products_count) text += `\n\nОна задана у товаров: ${attr.products_count}. Значения будут сняты.`;
+                let text = t("js.admin.delete_attr", { name: attr.name });
+                if (attr.products_count) text += "\n\n" + t("js.admin.delete_attr_used", { count: attr.products_count });
                 if (!confirm(text)) return;
                 run(() => api(`/admin/attributes/${attr.id}`, { method: "DELETE" }));
                 break;
             }
             case "rename-option": {
-                const value = prompt("Значение варианта", option.value)?.trim();
+                const value = prompt(t("js.admin.prompt_option"), option.value)?.trim();
                 if (!value || value === option.value) return;
                 run(() => api(`/admin/attribute-options/${option.id}`, { method: "PUT", body: { value } }));
                 break;
             }
             case "delete-option": {
-                let text = `Удалить вариант «${option.value}»?`;
-                if (option.products_count) text += `\n\nОн выбран у товаров: ${option.products_count}. Значение будет снято.`;
+                let text = t("js.admin.delete_option", { name: option.value });
+                if (option.products_count) text += "\n\n" + t("js.admin.delete_option_used", { count: option.products_count });
                 if (!confirm(text)) return;
                 run(() => api(`/admin/attribute-options/${option.id}`, { method: "DELETE" }));
                 break;

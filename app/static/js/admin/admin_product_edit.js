@@ -49,7 +49,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // Подпись рядом с кнопкой выбора файла (нативную подпись браузера не переопределить)
     function updateFileName() {
-        fileNameLabel.textContent = selectedFile ? selectedFile.name : "Файл не выбран";
+        fileNameLabel.textContent = selectedFile ? selectedFile.name : t("js.admin.no_file");
         fileNameLabel.classList.toggle("text-muted", !selectedFile);
     }
 
@@ -73,12 +73,12 @@ document.addEventListener("DOMContentLoaded", async () => {
             return;
         }
         if (!ALLOWED_TYPES.includes(file.type)) {
-            showAlert("Допустимы только JPEG, PNG и WebP", "warning");
+            showAlert(t("js.admin.only_types"), "warning");
             showImage(currentImageUrl);
             return;
         }
         if (file.size > MAX_IMAGE_BYTES) {
-            showAlert("Файл слишком большой (максимум 5 МБ)", "warning");
+            showAlert(t("js.admin.too_big"), "warning");
             showImage(currentImageUrl);
             return;
         }
@@ -97,8 +97,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         ]);
 
         // Списки нужно заполнить до установки value, иначе выбирать будет не из чего
-        fillSelect(categorySelect, "Выберите категорию...", categories);
-        fillSelect(brandSelect, "Без бренда", brands);
+        fillSelect(categorySelect, t("js.admin.select_category"), categories);
+        fillSelect(brandSelect, t("js.admin.brand_none"), brands);
         categorySelect.value = product.category_id;
         brandSelect.value = product.brand_id ?? "";
 
@@ -111,7 +111,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         // Окно управления характеристиками: после закрытия обновляем блок, сохраняя выбор
         document.getElementById("manage-attrs").addEventListener("click", () => {
             if (!categorySelect.value) {
-                showAlert("Сначала выберите категорию", "warning");
+                showAlert(t("js.admin.category_first"), "warning");
                 return;
             }
             const name = categorySelect.selectedOptions[0].textContent.trim();
@@ -138,7 +138,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (err.status === 404) {
             // Товара нет: редактировать нечего, форму прячем
             form.classList.add("d-none");
-            showAlert("Товар не найден", "warning");
+            showAlert(t("js.product.not_found"), "warning");
         }
         else {
             showAlert(errorText(err));
@@ -146,7 +146,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     deleteImageBtn.addEventListener("click", async () => {
-        if (!confirm("Удалить изображение товара?")) return;
+        if (!confirm(t("js.admin.delete_image_confirm"))) return;
 
         deleteImageBtn.disabled = true;
         try {
@@ -155,7 +155,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             resetSelectedFile();   // выбранный, но не сохранённый файл тоже сбрасываем
             showImage(null);
             updateDeleteBtn();
-            showAlert("Изображение удалено", "success");
+            showAlert(t("js.admin.image_deleted"), "success");
         }
         catch (err) {
             showAlert(errorText(err));
@@ -176,12 +176,12 @@ document.addEventListener("DOMContentLoaded", async () => {
         const oldPrice = oldPriceRaw === "" ? null : Number(oldPriceRaw);
 
         if (oldPrice !== null && oldPrice <= price) {
-            showAlert("Старая цена должна быть больше текущей", "warning");
+            showAlert(t("js.admin.old_price_error"), "warning");
             return;
         }
 
         if (!attrs || !attrs.isReady()) {
-            showAlert("Характеристики ещё не загружены, подождите секунду", "warning");
+            showAlert(t("js.admin.attrs_not_ready"), "warning");
             return;
         }
 
@@ -222,7 +222,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 updateDeleteBtn();
             }
             catch (err) {
-                showAlert(`Товар сохранён, но фото не загрузилось: ${errorText(err)}`, "warning");
+                showAlert(t("js.admin.photo_failed_edit", { error: errorText(err) }), "warning");
                 submitBtn.disabled = false;
                 return;   // остаёмся на странице, чтобы можно было повторить
             }
