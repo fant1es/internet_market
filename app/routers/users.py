@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.dependencies.auth import CurrentUser
+from app.dependencies.lang import Lang
 from app.schemas.auth import UserOut, UserUpdate, ChangePasswordSchema, ChangeEmailSchema
 from app.services import user_service, email_templates, email_service
 from app.utils.auth_cookie import set_auth_cookie
@@ -31,14 +32,14 @@ async def change_password(data: ChangePasswordSchema, user: CurrentUser,
 
 
 @router.post("/me/email")
-async def request_email_change(request: Request, data: ChangeEmailSchema, user: CurrentUser,
+async def request_email_change(data: ChangeEmailSchema, user: CurrentUser, lang: Lang,
                                db: Annotated[AsyncSession, Depends(get_db)],
                                background_tasks: BackgroundTasks):
     link = await user_service.request_email_change(db, user,
                                                    data.current_password, data.new_email)
 
-    confirm = email_templates.build_confirm_new_email(user.name, link, request.state.lang)
-    notice = email_templates.build_old_email_notice(user.name, data.new_email, request.state.lang)
+    confirm = email_templates.build_confirm_new_email(user.name, link, lang)
+    notice = email_templates.build_old_email_notice(user.name, data.new_email, lang)
 
     background_tasks.add_task(email_service.send_email, data.new_email, confirm.subject,
                               confirm.text, confirm.html)
