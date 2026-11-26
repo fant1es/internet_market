@@ -20,7 +20,9 @@ def jinja_t(ctx, key: str, **params):
 
 @pass_context
 def jinja_js_strings(ctx):
-    return js_strings(ctx["request"].state.lang)
+    user = ctx.get("user")
+    is_admin = bool(user and user.role == UserRole.ADMIN)
+    return js_strings(ctx["request"].state.lang, admin=is_admin)
 
 templates.env.globals["t"] = jinja_t
 templates.env.globals["js_strings"] = jinja_js_strings
