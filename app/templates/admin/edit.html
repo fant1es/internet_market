@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 
-{% block title %}Редактирование товара{% endblock %}
+{% block title %}{{ t('admin.edit_title') }}{% endblock %}
 
 {% block content %}
   <div class="d-flex justify-content-between align-items-center mb-4">
-    <a href="/admin" class="btn btn-outline-secondary">← К списку товаров</a>
-    <h2 class="h4 mb-0">Редактирование товара #<span id="product-id-display">{{ product_id }}</span></h2>
+    <a href="/admin" class="btn btn-outline-secondary">{{ t('admin.back_to_list') }}</a>
+    <h2 class="h4 mb-0">{{ t('admin.edit_title') }} #<span id="product-id-display">{{ product_id }}</span></h2>
   </div>
 
   <form id="product-form" data-id="{{ product_id }}" class="needs-validation" novalidate>
@@ -15,49 +15,51 @@
       <div class="col-lg-4">
         <div class="card shadow-sm mb-4">
           <div class="card-body text-center">
-            <h5 class="card-title text-start mb-3">Изображение</h5>
+            <h5 class="card-title text-start mb-3">{{ t('admin.image') }}</h5>
 
-            {# Заглушка локальная: без внешних сервисов. Какую из двух частей показать, решает JS #}
+            {# Какую из двух частей показать, решает JS #}
             <div class="ratio ratio-4x3 bg-light rounded border mb-3">
-              <img id="image-preview" alt="Превью товара" class="d-none object-fit-contain">
-              <div id="image-empty" class="d-flex align-items-center justify-content-center text-muted">Нет фото</div>
+              <img id="image-preview" alt="{{ t('admin.preview_alt') }}" class="d-none object-fit-contain">
+              <div id="image-empty" class="d-flex align-items-center justify-content-center text-muted">{{ t('js.catalog.no_photo') }}</div>
             </div>
+
             <button type="button" id="image-delete" class="btn btn-outline-danger btn-sm mb-3 d-none">
-              Удалить фото
+              {{ t('admin.delete_photo') }}
             </button>
+
             <div class="text-start">
-              <label class="form-label">Изображение товара</label>
+              <label class="form-label">{{ t('admin.image_label') }}</label>
 
               {# Настоящий input спрятан, но работает: label ниже открывает диалог выбора файла #}
               <input type="file" id="image_file" name="image" class="d-none"
                      accept="image/jpeg,image/png,image/webp">
 
               <div class="input-group">
-                <label for="image_file" class="btn btn-outline-secondary">Выбрать фото</label>
-                <span id="image-file-name" class="form-control text-muted text-truncate">Файл не выбран</span>
+                <label for="image_file" class="btn btn-outline-secondary">{{ t('admin.choose_photo') }}</label>
+                <span id="image-file-name" class="form-control text-muted text-truncate">{{ t('js.admin.no_file') }}</span>
               </div>
-              <div class="form-text">Поддерживаются JPEG, PNG и WebP, до 5 МБ</div>
+              <div class="form-text">{{ t('admin.image_hint') }}</div>
             </div>
           </div>
         </div>
 
         <div class="card shadow-sm">
           <div class="card-body">
-            <h5 class="card-title mb-3">Видимость и склад</h5>
+            <h5 class="card-title mb-3">{{ t('admin.visibility_stock') }}</h5>
 
             <div class="form-check form-switch mb-3">
               <input class="form-check-input" type="checkbox" role="switch" id="is_active" name="is_active" checked>
-              <label class="form-check-label fw-bold" for="is_active">Отображать на сайте</label>
-              <div class="form-text">Скрыть или показать товар в каталоге</div>
+              <label class="form-check-label fw-bold" for="is_active">{{ t('admin.show_on_site') }}</label>
+              <div class="form-text">{{ t('admin.show_hint') }}</div>
             </div>
 
             <hr class="my-3">
 
             <div class="mb-2">
-              <label for="stock_quantity" class="form-label fw-bold">Количество на складе, шт. <span class="text-danger">*</span></label>
+              <label for="stock_quantity" class="form-label fw-bold">{{ t('admin.stock_qty') }} <span class="text-danger">*</span></label>
               <input type="number" min="0" step="1" class="form-control" id="stock_quantity" name="stock_quantity"
                      value="0" required>
-              <div class="form-text">Если указать 0, товар будет отображаться как «Нет в наличии»</div>
+              <div class="form-text">{{ t('admin.stock_qty_hint') }}</div>
             </div>
           </div>
         </div>
@@ -67,39 +69,39 @@
       <div class="col-lg-8">
         <div class="card shadow-sm mb-4">
           <div class="card-body">
-            <h5 class="card-title mb-3">Основная информация</h5>
+            <h5 class="card-title mb-3">{{ t('admin.main_info') }}</h5>
 
             <div class="mb-3">
-              <label for="name" class="form-label fw-bold">Название товара <span class="text-danger">*</span></label>
-              <input type="text" class="form-control" id="name" name="name" required placeholder="Введите название товара">
+              <label for="name" class="form-label fw-bold">{{ t('admin.name_label') }} <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="name" name="name" required placeholder="{{ t('admin.name_placeholder') }}">
             </div>
 
             <div class="row g-3 mb-3">
               <div class="col-md-4">
-                <label for="sku" class="form-label">Артикул (SKU) <span class="text-danger">*</span></label>
+                <label for="sku" class="form-label">{{ t('admin.sku_label') }} <span class="text-danger">*</span></label>
                 <input type="text" class="form-control" id="sku" name="sku" required placeholder="ART-12345">
               </div>
 
               <div class="col-md-4">
-                <label for="category" class="form-label">Категория <span class="text-danger">*</span></label>
+                <label for="category" class="form-label">{{ t('js.product.category') }} <span class="text-danger">*</span></label>
                 {# Варианты подставит JS из /categories #}
                 <select class="form-select" id="category" name="category_id" required>
-                  <option value="">Загрузка...</option>
+                  <option value="">{{ t('common.loading') }}</option>
                 </select>
               </div>
 
               <div class="col-md-4">
-                <label for="brand" class="form-label">Бренд</label>
+                <label for="brand" class="form-label">{{ t('catalog.brand') }}</label>
                 {# Варианты подставит JS из /brands #}
                 <select class="form-select" id="brand" name="brand_id">
-                  <option value="">Загрузка...</option>
+                  <option value="">{{ t('common.loading') }}</option>
                 </select>
               </div>
             </div>
 
             <div class="mb-3">
-              <label for="description" class="form-label">Описание товара</label>
-              <textarea class="form-control" id="description" name="description" rows="5" placeholder="Подробное описание..."></textarea>
+              <label for="description" class="form-label">{{ t('admin.desc_label') }}</label>
+              <textarea class="form-control" id="description" name="description" rows="5" placeholder="{{ t('admin.desc_placeholder') }}"></textarea>
             </div>
           </div>
         </div>
@@ -107,32 +109,32 @@
         <div class="card shadow-sm mb-4">
           <div class="card-body">
             <div class="d-flex justify-content-between align-items-center mb-3">
-              <h5 class="card-title mb-0">Характеристики</h5>
-              <button type="button" id="manage-attrs" class="btn btn-outline-secondary btn-sm">Управление</button>
+              <h5 class="card-title mb-0">{{ t('js.product.attributes') }}</h5>
+              <button type="button" id="manage-attrs" class="btn btn-outline-secondary btn-sm">{{ t('admin.manage') }}</button>
             </div>
             <div id="attributes-box">
-              <p class="text-muted small mb-0">Выберите категорию, чтобы задать характеристики.</p>
+              <p class="text-muted small mb-0">{{ t('js.admin.attrs_choose_category') }}</p>
             </div>
           </div>
         </div>
 
         <div class="card shadow-sm mb-4">
           <div class="card-body">
-            <h5 class="card-title mb-3">Ценообразование</h5>
+            <h5 class="card-title mb-3">{{ t('admin.pricing') }}</h5>
 
             <div class="row g-3">
               <div class="col-md-6">
-                <label for="price" class="form-label">Цена, BYN <span class="text-danger">*</span></label>
+                <label for="price" class="form-label">{{ t('admin.price_label') }} <span class="text-danger">*</span></label>
                 <input type="number" step="0.01" min="0.01" class="form-control" id="price" name="price"
                        required placeholder="0.00">
-                <div class="form-text">Цена, по которой товар продаётся</div>
+                <div class="form-text">{{ t('admin.price_hint') }}</div>
               </div>
 
               <div class="col-md-6">
-                <label for="old_price" class="form-label">Старая цена (до скидки), BYN</label>
+                <label for="old_price" class="form-label">{{ t('admin.old_price_label') }}</label>
                 <input type="number" step="0.01" min="0.01" class="form-control" id="old_price" name="old_price"
-                       placeholder="Оставьте пустым, если скидки нет">
-                <div class="form-text">Должна быть больше текущей цены</div>
+                       placeholder="{{ t('admin.old_price_placeholder') }}">
+                <div class="form-text">{{ t('admin.old_price_hint') }}</div>
               </div>
             </div>
           </div>
@@ -140,8 +142,8 @@
 
         {# Кнопки действия #}
         <div class="d-flex justify-content-end gap-2">
-          <a href="/admin" class="btn btn-outline-secondary px-4">Отменить</a>
-          <button type="submit" class="btn btn-primary px-4">Подтвердить (Сохранить)</button>
+          <a href="/admin" class="btn btn-outline-secondary px-4">{{ t('admin.discard') }}</a>
+          <button type="submit" class="btn btn-primary px-4">{{ t('admin.save_confirm') }}</button>
         </div>
 
       </div>

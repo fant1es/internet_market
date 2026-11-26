@@ -3,19 +3,19 @@
 {% block head %}
   <link rel="stylesheet" href="/static/css/catalog.css">
 {% endblock %}
-{% block title %}Админка: товары{% endblock %}
+{% block title %}{{ t('admin.products_title') }}{% endblock %}
 
 {% block content %}
   <div class="d-flex justify-content-between align-items-center mb-4">
-    <h1 class="mb-0">Товары</h1>
+    <h1 class="mb-0">{{ t('admin.products') }}</h1>
     <div class="d-flex gap-2">
-      <a href="/admin/references" class="btn btn-outline-secondary">Бренды и категории</a>
-      <a href="/admin/product/new" class="btn btn-primary">+ Добавить товар</a>
+      <a href="/admin/references" class="btn btn-outline-secondary">{{ t('admin.refs') }}</a>
+      <a href="/admin/product/new" class="btn btn-primary">{{ t('admin.add_product') }}</a>
       <div class="dropdown">
-        <button class="btn btn-outline-success dropdown-toggle" data-bs-toggle="dropdown">Отчёты</button>
+        <button class="btn btn-outline-success dropdown-toggle" data-bs-toggle="dropdown">{{ t('admin.reports') }}</button>
         <ul class="dropdown-menu">
-          <li><a class="dropdown-item" href="/admin/reports/stock">Остатки на складе</a></li>
-          <li><a class="dropdown-item" href="/admin/reports/users">Все пользователи</a></li>
+          <li><a class="dropdown-item" href="/admin/reports/stock">{{ t('admin.report_stock') }}</a></li>
+          <li><a class="dropdown-item" href="/admin/reports/users">{{ t('admin.report_users') }}</a></li>
         </ul>
       </div>
     </div>
@@ -24,11 +24,11 @@
   <!-- Сверху только поиск и категория: от категории зависят бренды и границы цены -->
   <div class="row g-2 mb-3">
     <div class="col-md-8">
-      <input type="search" id="search-input" class="form-control" placeholder="Поиск по названию или артикулу...">
+      <input type="search" id="search-input" class="form-control" placeholder="{{ t('admin.search_placeholder') }}">
     </div>
     <div class="col-md-4">
       <select id="category-select" class="form-select">
-        <option value="">Все категории</option>
+        <option value="">{{ t('catalog.all_categories') }}</option>
       </select>
     </div>
   </div>
@@ -37,48 +37,48 @@
     <aside class="col-lg-3 align-self-start filters-sticky">
       <button class="btn btn-outline-secondary w-100 d-lg-none mb-2" type="button"
               data-bs-toggle="collapse" data-bs-target="#filters-panel"
-              aria-expanded="false" aria-controls="filters-panel">Фильтры</button>
+              aria-expanded="false" aria-controls="filters-panel">{{ t('catalog.filters') }}</button>
 
       <div id="filters-panel" class="collapse d-lg-block">
         <div class="d-flex justify-content-between align-items-center mb-2">
-          <h6 class="mb-0">Фильтры</h6>
-          <button type="button" id="reset-filters" class="btn btn-link btn-sm p-0">Сбросить</button>
+          <h6 class="mb-0">{{ t('catalog.filters') }}</h6>
+          <button type="button" id="reset-filters" class="btn btn-link btn-sm p-0">{{ t('catalog.reset') }}</button>
         </div>
 
         <div class="filter-block">
-          <label for="sort-select" class="form-label small text-muted mb-1">Сортировка</label>
+          <label for="sort-select" class="form-label small text-muted mb-1">{{ t('catalog.sort') }}</label>
           <select id="sort-select" class="form-select form-select-sm">
-            <option value="id_asc">По id</option>
-            <option value="newest">Сначала новые</option>
-            <option value="price_asc">Цена ↑</option>
-            <option value="price_desc">Цена ↓</option>
-            <option value="stock_asc">Остаток ↑</option>
-            <option value="stock_desc">Остаток ↓</option>
-            <option value="name">По названию</option>
+            <option value="id_asc">{{ t('admin.sort_id') }}</option>
+            <option value="newest">{{ t('catalog.sort_newest') }}</option>
+            <option value="price_asc">{{ t('admin.sort_price_asc') }}</option>
+            <option value="price_desc">{{ t('admin.sort_price_desc') }}</option>
+            <option value="stock_asc">{{ t('admin.sort_stock_asc') }}</option>
+            <option value="stock_desc">{{ t('admin.sort_stock_desc') }}</option>
+            <option value="name">{{ t('admin.sort_name') }}</option>
           </select>
         </div>
 
         <div class="filter-block">
-          <label for="status-select" class="form-label small text-muted mb-1">Статус</label>
+          <label for="status-select" class="form-label small text-muted mb-1">{{ t('admin.status') }}</label>
           <select id="status-select" class="form-select form-select-sm">
-            <option value="">Все товары</option>
-            <option value="true">Только видимые</option>
-            <option value="false">Только скрытые</option>
+            <option value="">{{ t('admin.status_all') }}</option>
+            <option value="true">{{ t('admin.status_visible') }}</option>
+            <option value="false">{{ t('admin.status_hidden') }}</option>
           </select>
         </div>
 
         <div class="filter-block">
-          <label for="stock-select" class="form-label small text-muted mb-1">Остаток</label>
+          <label for="stock-select" class="form-label small text-muted mb-1">{{ t('admin.stock') }}</label>
           <select id="stock-select" class="form-select form-select-sm">
-            <option value="">Любой остаток</option>
-            <option value="in_stock">В наличии</option>
-            <option value="low">Мало (1–5)</option>
-            <option value="out">Нет в наличии</option>
+            <option value="">{{ t('admin.stock_any') }}</option>
+            <option value="in_stock">{{ t('admin.stock_in') }}</option>
+            <option value="low">{{ t('admin.stock_low') }}</option>
+            <option value="out">{{ t('admin.stock_out') }}</option>
           </select>
         </div>
 
         <details class="filter-group" open>
-          <summary>Цена</summary>
+          <summary>{{ t('catalog.price') }}</summary>
           <div class="pb-3">
             <div id="price-label" class="small text-muted mb-1"></div>
             <div class="range-dual mb-2">
@@ -90,11 +90,11 @@
             <div class="row g-2">
               <div class="col-6">
                 <input type="number" id="min-price" class="form-control form-control-sm"
-                       placeholder="от" min="0" step="0.01">
+                       placeholder="{{ t('catalog.from') }}" min="0" step="0.01">
               </div>
               <div class="col-6">
                 <input type="number" id="max-price" class="form-control form-control-sm"
-                       placeholder="до" min="0" step="0.01">
+                       placeholder="{{ t('catalog.to') }}" min="0" step="0.01">
               </div>
             </div>
           </div>
@@ -103,12 +103,12 @@
         <div class="filter-block">
           <div class="form-check mb-0">
             <input class="form-check-input" type="checkbox" id="discount-only">
-            <label class="form-check-label" for="discount-only">Только со скидкой</label>
+            <label class="form-check-label" for="discount-only">{{ t('catalog.discount_only') }}</label>
           </div>
         </div>
 
         <details class="filter-group" open>
-          <summary>Бренд</summary>
+          <summary>{{ t('catalog.brand') }}</summary>
           <div id="brands-box" class="filter-scroll pb-2"></div>
         </details>
       </div>
@@ -120,13 +120,13 @@
           <thead>
             <tr>
               <th style="width: 64px"></th>
-              <th>Артикул</th>
-              <th>Название</th>
-              <th>Категория</th>
-              <th>Бренд</th>
-              <th class="text-end">Цена</th>
-              <th class="text-end">Остаток</th>
-              <th>Статус</th>
+              <th>{{ t('js.product.sku') }}</th>
+              <th>{{ t('admin.col_name') }}</th>
+              <th>{{ t('js.product.category') }}</th>
+              <th>{{ t('catalog.brand') }}</th>
+              <th class="text-end">{{ t('catalog.price') }}</th>
+              <th class="text-end">{{ t('admin.stock') }}</th>
+              <th>{{ t('admin.status') }}</th>
               <th></th>
             </tr>
           </thead>
