@@ -4,7 +4,7 @@
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="attr-modal-title"></h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ t('common.close') }}"></button>
       </div>
 
       <div class="modal-body">
@@ -15,8 +15,8 @@
       <div class="modal-footer">
         <form id="attr-add-form" class="input-group" novalidate>
           <input type="text" id="attr-new-name" class="form-control" maxlength="100" required
-                 placeholder="Новая характеристика, например «Цвет»">
-          <button type="submit" class="btn btn-primary">+ Добавить характеристику</button>
+                 placeholder="{{ t('admin.attr_placeholder') }}">
+          <button type="submit" class="btn btn-primary">{{ t('admin.attr_add') }}</button>
         </form>
       </div>
     </div>
