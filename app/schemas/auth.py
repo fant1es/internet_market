@@ -4,6 +4,7 @@ from pydantic import BaseModel, ConfigDict, field_validator, Field
 from pydantic import EmailStr
 
 from app.schemas.types import Name, Phone, Password, Email
+from app.utils.errors import ValidationCode
 
 
 class RegisterSchema(BaseModel):
@@ -61,12 +62,12 @@ class UserUpdate(BaseModel):
     @classmethod
     def name_not_null(cls, v: str):
         if v is None:
-            raise ValueError("Имя нельзя очистить")
+            raise ValidationCode("name_required")
         return v
 
     @field_validator("default_address")
     @classmethod
     def default_address_min_length(cls, v: str):
         if v is not None and len(v) < 5:
-            raise ValueError("Длина адреса должна быть не короче 5 символов")
+            raise ValidationCode("address_too_short", min=5)
         return v

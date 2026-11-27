@@ -5,10 +5,11 @@ import phonenumbers
 from phonenumbers import NumberParseException, PhoneNumberFormat, PhoneNumberType
 from pydantic import AfterValidator, StringConstraints, EmailStr
 
+from app.utils.errors import ValidationCode
+
 DEFAULT_REGION = "BY"  # Для номеров без кода страны:
 _ALLOWED_CHARS = re.compile(r"^[\d\s\-().+]+$")
 _MOBILE_TYPES = {PhoneNumberType.MOBILE, PhoneNumberType.FIXED_LINE_OR_MOBILE}
-_PHONE_HINT = "Неверно указан номер. Пример номера: +375 29 123-45-67"
 _NAME_RE = re.compile(r"^(?=.*[^\W\s\d_])[A-Za-z\s]+$")
 
 _PASSWORD_MIN_LEN = 8
@@ -16,11 +17,11 @@ _PASSWORD_MAX_LEN = 128
 
 def _validate_password(v: str) -> str:
     if len(v) < _PASSWORD_MIN_LEN:
-        raise ValueError(f"Пароль должен быть не короче {_PASSWORD_MIN_LEN} символов")
+        raise ValidationCode("password_too_short", min=_PASSWORD_MIN_LEN)
     if len(v) > _PASSWORD_MAX_LEN:
-        raise ValueError(f"Пароль должен быть не длиннее {_PASSWORD_MAX_LEN} символов")
+        raise ValidationCode("password_too_long", max=_PASSWORD_MAX_LEN)
     if not v.isprintable():
-        raise ValueError("Пароль содержит недопустимые символы")
+        raise ValidationCode("password_invalid_chars")
     return v
 
 
@@ -28,22 +29,22 @@ def normalize_phone(value: str) -> str:
     """Любой валидный мобильный номер приводится к стандарту E.164, например '8 (029) 123-45-67' -> '+375291234567'."""
     raw = value.strip()
     if not _ALLOWED_CHARS.fullmatch(raw):
-        raise ValueError("Номер может содержать только цифры, +, пробелы, скобки и дефисы")
+        raise ValidationCode("phone_chars")
     try:
         number = phonenumbers.parse(raw, DEFAULT_REGION)
     except NumberParseException:
-        raise ValueError(_PHONE_HINT)
+        raise ValidationCode("phone_invalid")
     if not phonenumbers.is_valid_number(number):
-        raise ValueError(_PHONE_HINT)
+        raise ValidationCode("phone_invalid")
     if phonenumbers.number_type(number) not in _MOBILE_TYPES:
-        raise ValueError("Укажите номер мобильного телефона")
+        raise ValidationCode("phone_not_mobile")
     return phonenumbers.format_number(number, PhoneNumberFormat.E164)
 
 
 def _validate_name(v: str) -> str:
     # Проверка any, чтобы не проходили имена типа "---", "- -"
     if not _NAME_RE.fullmatch(v) or not any(c.isalpha() for c in v):
-        raise ValueError("Имя должно содержать только буквы и пробелы")
+        raise ValidationCode("name_invalid")
     return v
 
 Name = Annotated[str,

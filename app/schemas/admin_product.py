@@ -4,6 +4,7 @@ from decimal import Decimal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.schemas.product import ProductOut
+from app.utils.errors import ValidationCode
 
 
 class ProductIn(BaseModel):
@@ -26,7 +27,7 @@ class ProductIn(BaseModel):
     def check_old_price(self):
         # Старая цена нужна только для показа скидки, значит, она обязана быть выше текущей
         if self.old_price is not None and self.old_price <= self.price:
-            raise ValueError("Старая цена должна быть больше текущей")
+            raise ValidationCode("old_price_gt_price")
         return self
 
 

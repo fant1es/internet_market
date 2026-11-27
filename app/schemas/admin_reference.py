@@ -2,6 +2,8 @@ import re
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from app.utils.errors import ValidationCode
+
 # Латиница, цифры и одиночные дефисы между ними
 SLUG_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 
@@ -18,7 +20,7 @@ class _ReferenceIn(BaseModel):
     def check_slug(cls, value: str) -> str:
         value = value.lower()
         if not SLUG_RE.match(value):
-            raise ValueError("Slug: только латиница, цифры и дефисы, например smart-home")
+            raise ValidationCode("slug_format")
         return value
 
 
