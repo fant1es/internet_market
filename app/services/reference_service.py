@@ -1,4 +1,3 @@
-from fastapi import HTTPException
 from loguru import logger
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -7,10 +6,11 @@ from app.models import Brand, Category, Product
 from app.schemas.admin_reference import BrandIn, CategoryIn
 from app.utils.admin_audit import describe_changes
 from app.utils.database import commit_or_409, get_or_404
+from app.utils.errors import AppError
 
 audit = logger.bind(channel="audit")
 
-CONFLICT_MSG = "Конфликт данных: slug занят или запись используется товарами"
+CONFLICT_CODE = "conflict_reference"
 VALUE_FIELDS = ("name", "slug", "is_active")
 
 
@@ -21,7 +21,7 @@ async def _ensure_slug_free(db: AsyncSession, model, slug: str, exclude_id: int 
         stmt = stmt.where(model.id != exclude_id)  # свой же slug при редактировании доступен
     if await db.scalar(stmt) is not None:
         logger.debug("Slug занят | модель={} slug={}", model.__name__, slug)
-        raise HTTPException(status_code=409, detail="Такой slug уже занят")
+        raise AppError(409, "slug_taken")
 
 
 async def _products_count(db: AsyncSession, column, item_id: int) -> int:
@@ -54,7 +54,7 @@ async def create_brand(db: AsyncSession, data: BrandIn, actor_id: int) -> dict:
 
     brand = Brand(**data.model_dump())
     db.add(brand)
-    await commit_or_409(db, message=CONFLICT_MSG)
+    await commit_or_409(db, code=CONFLICT_CODE)
     await db.refresh(brand)
 
     audit.info("Бренд создан | brand_id={} название={} admin_id={}", brand.id, brand.name, actor_id)
@@ -62,7 +62,7 @@ async def create_brand(db: AsyncSession, data: BrandIn, actor_id: int) -> dict:
 
 
 async def update_brand(db: AsyncSession, brand_id: int, data: BrandIn, actor_id: int) -> dict:
-    brand = await get_or_404(db, Brand, brand_id, message="Бренд не найден")
+    brand = await get_or_404(db, Brand, brand_id, code="brand_not_found")
     await _ensure_slug_free(db, Brand, data.slug, exclude_id=brand_id)
 
     new_values = data.model_dump()
@@ -70,7 +70,7 @@ async def update_brand(db: AsyncSession, brand_id: int, data: BrandIn, actor_id:
     for field, value in new_values.items():
         setattr(brand, field, value)
 
-    await commit_or_409(db, message=CONFLICT_MSG)
+    await commit_or_409(db, code=CONFLICT_CODE)
 
     changes = describe_changes(old_values, new_values, VALUE_FIELDS)
     if changes:
@@ -79,9 +79,9 @@ async def update_brand(db: AsyncSession, brand_id: int, data: BrandIn, actor_id:
 
 
 async def set_brand_active(db: AsyncSession, brand_id: int, is_active: bool, actor_id: int) -> dict:
-    brand = await get_or_404(db, Brand, brand_id, message="Бренд не найден")
+    brand = await get_or_404(db, Brand, brand_id, code="brand_not_found")
     brand.is_active = is_active
-    await commit_or_409(db, message=CONFLICT_MSG)
+    await commit_or_409(db, code=CONFLICT_CODE)
 
     audit.info("Бренд {} | brand_id={} admin_id={}",
                "показан" if is_active else "скрыт", brand_id, actor_id)
@@ -89,19 +89,16 @@ async def set_brand_active(db: AsyncSession, brand_id: int, is_active: bool, act
 
 
 async def delete_brand(db: AsyncSession, brand_id: int, actor_id: int) -> None:
-    brand = await get_or_404(db, Brand, brand_id, message="Бренд не найден")
+    brand = await get_or_404(db, Brand, brand_id, code="brand_not_found")
 
     count = await _products_count(db, Product.brand_id, brand_id)
     if count:
         logger.debug("Удаление бренда отклонено | brand_id={} товаров={}", brand_id, count)
-        raise HTTPException(
-            status_code=409,
-            detail=f"Нельзя удалить: к бренду привязано товаров: {count}. Скройте бренд или смените бренд у товаров",
-        )
+        raise AppError(409, "brand_in_use", {"count": count})
 
     name = brand.name  # до удаления: после него объект уже не пригодится
     await db.delete(brand)
-    await commit_or_409(db, message=CONFLICT_MSG)
+    await commit_or_409(db, code=CONFLICT_CODE)
 
     audit.info("Бренд удалён | brand_id={} название={} admin_id={}", brand_id, name, actor_id)
 
@@ -131,7 +128,7 @@ async def create_category(db: AsyncSession, data: CategoryIn, actor_id: int) -> 
 
     category = Category(**data.model_dump())
     db.add(category)
-    await commit_or_409(db, message=CONFLICT_MSG)
+    await commit_or_409(db, code=CONFLICT_CODE)
     await db.refresh(category)
 
     audit.info("Категория создана | category_id={} название={} admin_id={}",
@@ -140,7 +137,7 @@ async def create_category(db: AsyncSession, data: CategoryIn, actor_id: int) -> 
 
 
 async def update_category(db: AsyncSession, category_id: int, data: CategoryIn, actor_id: int) -> dict:
-    category = await get_or_404(db, Category, category_id, message="Категория не найдена")
+    category = await get_or_404(db, Category, category_id, code="category_not_found")
     await _ensure_slug_free(db, Category, data.slug, exclude_id=category_id)
 
     new_values = data.model_dump()
@@ -148,7 +145,7 @@ async def update_category(db: AsyncSession, category_id: int, data: CategoryIn, 
     for field, value in new_values.items():
         setattr(category, field, value)
 
-    await commit_or_409(db, message=CONFLICT_MSG)
+    await commit_or_409(db, code=CONFLICT_CODE)
 
     changes = describe_changes(old_values, new_values, VALUE_FIELDS)
     if changes:
@@ -158,18 +155,15 @@ async def update_category(db: AsyncSession, category_id: int, data: CategoryIn, 
 
 
 async def delete_category(db: AsyncSession, category_id: int, actor_id: int) -> None:
-    category = await get_or_404(db, Category, category_id, message="Категория не найдена")
+    category = await get_or_404(db, Category, category_id, code="category_not_found")
 
     count = await _products_count(db, Product.category_id, category_id)
     if count:
         logger.debug("Удаление категории отклонено | category_id={} товаров={}", category_id, count)
-        raise HTTPException(
-            status_code=409,
-            detail=f"Нельзя удалить: в категории товаров: {count}. Сначала перенесите их в другую категорию",
-        )
+        raise AppError(409, "category_in_use", {"count": count})
 
     name = category.name  # до удаления
     await db.delete(category)
-    await commit_or_409(db, message=CONFLICT_MSG)
+    await commit_or_409(db, code=CONFLICT_CODE)
 
     audit.info("Категория удалена | category_id={} название={} admin_id={}", category_id, name, actor_id)

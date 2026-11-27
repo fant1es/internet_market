@@ -6,6 +6,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import User
+from app.utils.errors import AppError
 from app.utils.security import hash_password
 
 T = TypeVar("T")
@@ -18,17 +19,17 @@ def _constraint_name(e: IntegrityError) -> str:
     return getattr(cause, "constraint_name", None) or type(e.orig).__name__
 
 
-async def get_or_404(db: AsyncSession, model: type[T], item_id: int, message: str) -> T:
-    """Достаёт объект по первичному ключу или отдаёт 404 с переданным сообщением."""
+async def get_or_404(db: AsyncSession, model: type[T], item_id: int, code: str) -> T:
+    """Достаёт объект по первичному ключу или отдаёт 404 с кодом ошибки (текст подбирается по языку запроса)."""
     item = await db.get(model, item_id)
     if item is None:
         # Здесь просто обычное поведение пользователя (устаревшая ссылка, чужой id), поэтому DEBUG
         logger.debug("Объект не найден | модель={} id={}", model.__name__, item_id)
-        raise HTTPException(status_code=404, detail=message)
+        raise AppError(404, code)
     return item
 
 
-async def commit_or_409(db: AsyncSession, message: str) -> None:
+async def commit_or_409(db: AsyncSession, code: str) -> None:
     """Коммит со страховкой: нарушение уникальности/внешнего ключа превращается в 409."""
     try:
         await db.commit()
@@ -36,10 +37,10 @@ async def commit_or_409(db: AsyncSession, message: str) -> None:
         await db.rollback()
         # Так как проверки в сервисах прошли, значит это гонка или нарушение внешнего ключа
         logger.warning(
-            "Конфликт целостности данных | ограничение={} причина={}",
-            _constraint_name(e), message,
+            "Конфликт целостности данных | ограничение={} код={}",
+            _constraint_name(e), code,
         )
-        raise HTTPException(status_code=409, detail=message)
+        raise AppError(409, code)
 
 
 async def run_in_transaction(db: AsyncSession, action: Callable[..., Awaitable[Any]],

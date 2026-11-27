@@ -1,12 +1,11 @@
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from fastapi import HTTPException
-
 from app.models import Attribute, AttributeOption, Category, ProductOption
 from app.utils.database import commit_or_409, get_or_404
+from app.utils.errors import AppError
 
-CONFLICT_MSG = "Конфликт данных: такая запись уже существует"
+CONFLICT_CODE = "conflict_exists"
 
 
 def _attribute_out(attribute: Attribute, products_count: int = 0) -> dict:
@@ -34,7 +33,7 @@ async def _ensure_slug_free(db: AsyncSession, category_id: int, slug: str, exclu
     if exclude_id is not None:
         stmt = stmt.where(Attribute.id != exclude_id)
     if await db.scalar(stmt) is not None:
-        raise HTTPException(status_code=409, detail="Характеристика с таким названием уже есть в категории")
+        raise AppError(409, "attribute_exists")
 
 
 async def _ensure_value_free(db: AsyncSession, attribute_id: int, value: str, exclude_id: int | None = None) -> None:
@@ -46,7 +45,7 @@ async def _ensure_value_free(db: AsyncSession, attribute_id: int, value: str, ex
     if exclude_id is not None:
         stmt = stmt.where(AttributeOption.id != exclude_id)
     if await db.scalar(stmt) is not None:
-        raise HTTPException(status_code=409, detail="Такой вариант уже есть у этой характеристики")
+        raise AppError(409, "option_exists")
 
 
 # --- Чтение -----------------------------------------------------------------
@@ -54,7 +53,7 @@ async def _ensure_value_free(db: AsyncSession, attribute_id: int, value: str, ex
 # noinspection PyTypeChecker
 async def list_attributes(db: AsyncSession, category_id: int) -> list[dict]:
     """Все характеристики категории с вариантами, включая пустые и неиспользуемые."""
-    await get_or_404(db, Category, category_id, message="Категория не найдена")
+    await get_or_404(db, Category, category_id, code="category_not_found")
 
     attributes = (await db.scalars(
         select(Attribute).where(Attribute.category_id == category_id)
@@ -89,7 +88,7 @@ async def list_attributes(db: AsyncSession, category_id: int) -> list[dict]:
 
 # --- Характеристики ---------------------------------------------------------
 async def create_attribute(db: AsyncSession, category_id: int, name: str, slug: str) -> dict:
-    await get_or_404(db, Category, category_id, message="Категория не найдена")
+    await get_or_404(db, Category, category_id, code="category_not_found")
     await _ensure_slug_free(db, category_id, slug)
 
     position = await db.scalar(
@@ -98,31 +97,31 @@ async def create_attribute(db: AsyncSession, category_id: int, name: str, slug: 
     )
     attribute = Attribute(category_id=category_id, name=name, slug=slug, position=position)
     db.add(attribute)
-    await commit_or_409(db, message=CONFLICT_MSG)  # страховка от гонки по уникальному slug
+    await commit_or_409(db, code=CONFLICT_CODE)  # страховка от гонки по уникальному slug
     await db.refresh(attribute)
     return _attribute_out(attribute)
 
 
 async def update_attribute(db: AsyncSession, attribute_id: int, name: str, slug: str) -> dict:
-    attribute = await get_or_404(db, Attribute, attribute_id, message="Характеристика не найдена")
+    attribute = await get_or_404(db, Attribute, attribute_id, code="attribute_not_found")
     await _ensure_slug_free(db, attribute.category_id, slug, exclude_id=attribute_id)
 
     attribute.name = name
     attribute.slug = slug
-    await commit_or_409(db, message=CONFLICT_MSG)
+    await commit_or_409(db, code=CONFLICT_CODE)
     return _attribute_out(attribute, await _usage(db, ProductOption.attribute_id, attribute_id))
 
 
 async def delete_attribute(db: AsyncSession, attribute_id: int) -> None:
     """Варианты и выбранные у товаров значения удаляет сама БД (ON DELETE CASCADE)."""
-    attribute = await get_or_404(db, Attribute, attribute_id, message="Характеристика не найдена")
+    attribute = await get_or_404(db, Attribute, attribute_id, code="attribute_not_found")
     await db.delete(attribute)
-    await commit_or_409(db, message=CONFLICT_MSG)
+    await commit_or_409(db, code=CONFLICT_CODE)
 
 
 # --- Варианты ---------------------------------------------------------------
 async def create_option(db: AsyncSession, attribute_id: int, value: str) -> dict:
-    await get_or_404(db, Attribute, attribute_id, message="Характеристика не найдена")
+    await get_or_404(db, Attribute, attribute_id, code="attribute_not_found")
     await _ensure_value_free(db, attribute_id, value)
 
     position = await db.scalar(
@@ -131,22 +130,22 @@ async def create_option(db: AsyncSession, attribute_id: int, value: str) -> dict
     )
     option = AttributeOption(attribute_id=attribute_id, value=value, position=position)
     db.add(option)
-    await commit_or_409(db, message=CONFLICT_MSG)
+    await commit_or_409(db, code=CONFLICT_CODE)
     await db.refresh(option)
     return _option_out(option)
 
 
 async def update_option(db: AsyncSession, option_id: int, value: str) -> dict:
-    option = await get_or_404(db, AttributeOption, option_id, message="Вариант не найден")
+    option = await get_or_404(db, AttributeOption, option_id, code="option_not_found")
     await _ensure_value_free(db, option.attribute_id, value, exclude_id=option_id)
 
     option.value = value
-    await commit_or_409(db, message=CONFLICT_MSG)
+    await commit_or_409(db, code=CONFLICT_CODE)
     return _option_out(option, await _usage(db, ProductOption.option_id, option_id))
 
 
 async def delete_option(db: AsyncSession, option_id: int) -> None:
     """У товаров, где вариант был выбран, значение снимается каскадом в БД."""
-    option = await get_or_404(db, AttributeOption, option_id, message="Вариант не найден")
+    option = await get_or_404(db, AttributeOption, option_id, code="option_not_found")
     await db.delete(option)
-    await commit_or_409(db, message=CONFLICT_MSG)
+    await commit_or_409(db, code=CONFLICT_CODE)

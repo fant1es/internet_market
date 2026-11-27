@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models import Attribute, AttributeOption, Category, Product, ProductOption
 from app.schemas.category import CategoryOut, FilterAttributeOut
+from app.utils.errors import AppError
 
 router = APIRouter(prefix="/categories", tags=["categories"])
 
@@ -25,7 +26,7 @@ async def category_filters(slug: str, db: AsyncSession = Depends(get_db)):
         select(Category).where(Category.slug == slug, Category.is_active.is_(True))
     )
     if category is None:
-        raise HTTPException(status_code=404, detail="Категория не найдена")
+        raise AppError(404, "category_not_found")
 
     # Только варианты, которые есть хотя бы у одного видимого товара категории,
     # чтобы в панели не было вариантов, при выборе которых ничего не находится

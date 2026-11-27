@@ -2,7 +2,6 @@ import math
 from decimal import Decimal
 from enum import Enum
 
-from fastapi import HTTPException
 from loguru import logger
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,11 +11,12 @@ from app.schemas.admin_product import ProductIn
 from app.services.product_attributes_service import fetch_product_attributes
 from app.utils.admin_audit import describe_changes
 from app.utils.database import commit_or_409, get_or_404
+from app.utils.errors import AppError
 
 audit = logger.bind(channel="audit")
 
 LOW_STOCK = 5  # порог "мало на складе"
-CONFLICT_MSG = "Товар с таким артикулом уже существует"
+CONFLICT_CODE = "sku_taken"
 # Поля, у которых в аудите показываются изменения
 VALUE_FIELDS = ("price", "old_price", "stock_quantity", "is_active", "sku", "category_id", "brand_id")
 
@@ -63,10 +63,10 @@ async def _load_options(db: AsyncSession, data: ProductIn) -> list[AttributeOpti
     if len(rows) != len(ids):
         logger.debug("Характеристики отклонены | причина=не относятся к категории category_id={}",
                      data.category_id)
-        raise HTTPException(status_code=422, detail="Некорректные характеристики для выбранной категории")
+        raise AppError(422, "options_invalid_for_category")
     if len({o.attribute_id for o in rows}) != len(rows):
         logger.debug("Характеристики отклонены | причина=несколько вариантов одной характеристики")
-        raise HTTPException(status_code=422, detail="Для одной характеристики можно выбрать только один вариант")
+        raise AppError(422, "option_duplicate_attribute")
     return list(rows)
 
 
@@ -93,19 +93,19 @@ async def _validate_refs(db: AsyncSession, data: ProductIn, product_id: int | No
     """Проверяет, что категория и бренд существуют, а артикул не занят другим товаром."""
     if await db.scalar(select(Category.id).where(Category.id == data.category_id)) is None:
         logger.debug("Товар отклонён | причина=категория не найдена category_id={}", data.category_id)
-        raise HTTPException(status_code=422, detail="Категория не найдена")
+        raise AppError(422, "category_not_found")
 
     if data.brand_id is not None:
         if await db.scalar(select(Brand.id).where(Brand.id == data.brand_id)) is None:
             logger.debug("Товар отклонён | причина=бренд не найден brand_id={}", data.brand_id)
-            raise HTTPException(status_code=422, detail="Бренд не найден")
+            raise AppError(422, "brand_not_found")
 
     sku_stmt = select(Product.id).where(Product.sku == data.sku)
     if product_id is not None:
         sku_stmt = sku_stmt.where(Product.id != product_id)  # Свой же артикул при редактировании доступен
     if await db.scalar(sku_stmt) is not None:
         logger.debug("Товар отклонён | причина=артикул занят sku={}", data.sku)
-        raise HTTPException(status_code=409, detail=CONFLICT_MSG)
+        raise AppError(409, CONFLICT_CODE)
 
 
 # --- Чтение -----------------------------------------------------------------
@@ -126,7 +126,7 @@ async def list_products(db: AsyncSession, *,
         page_size: int = 20,
 ) -> dict:
     if min_price is not None and max_price is not None and min_price > max_price:
-        raise HTTPException(status_code=422, detail="Минимальная цена не может быть больше максимальной")
+        raise AppError(422, "price_range_invalid")
 
     stmt = select(Product)
 
@@ -174,11 +174,11 @@ async def list_products(db: AsyncSession, *,
 
 
 async def get_product(db: AsyncSession, product_id: int) -> Product:
-    return await get_or_404(db, Product, product_id, message="Товар не найден")
+    return await get_or_404(db, Product, product_id, code="product_not_found")
 
 
 async def get_product_attributes(db: AsyncSession, product_id: int) -> list[dict]:
-    await get_or_404(db, Product, product_id, message="Товар не найден")
+    await get_or_404(db, Product, product_id, code="product_not_found")
     return await fetch_product_attributes(db, product_id)
 
 
@@ -191,7 +191,7 @@ async def create_product(db: AsyncSession, data: ProductIn, actor_id: int) -> Pr
     product = Product(**data.model_dump(exclude={"option_ids"}))
     _apply_options(product, options)
     db.add(product)
-    await commit_or_409(db, message=CONFLICT_MSG)
+    await commit_or_409(db, code=CONFLICT_CODE)
     await db.refresh(product)
     await db.refresh(product, ["selected_options"])  # новые ProductOption нужно подтянуть заново
 
@@ -201,7 +201,7 @@ async def create_product(db: AsyncSession, data: ProductIn, actor_id: int) -> Pr
 
 
 async def update_product(db: AsyncSession, product_id: int, data: ProductIn, actor_id: int) -> Product:
-    product = await get_or_404(db, Product, product_id, message="Товар не найден")
+    product = await get_or_404(db, Product, product_id, code="product_not_found")
     await _validate_refs(db, data, product_id=product_id)
     options = await _load_options(db, data)
 
@@ -214,7 +214,7 @@ async def update_product(db: AsyncSession, product_id: int, data: ProductIn, act
         setattr(product, field, value)
     _apply_options(product, options)
 
-    await commit_or_409(db, message=CONFLICT_MSG)
+    await commit_or_409(db, code=CONFLICT_CODE)
     await db.refresh(product, ["selected_options"])
 
     changes = describe_changes(
@@ -227,9 +227,9 @@ async def update_product(db: AsyncSession, product_id: int, data: ProductIn, act
 
 async def set_product_active(db: AsyncSession, product_id: int, is_active: bool, actor_id: int) -> Product:
     # Изменение is_active работает как мягкое удаление
-    product = await get_or_404(db, Product, product_id, message="Товар не найден")
+    product = await get_or_404(db, Product, product_id, code="product_not_found")
     product.is_active = is_active
-    await commit_or_409(db, message=CONFLICT_MSG)
+    await commit_or_409(db, code=CONFLICT_CODE)
 
     audit.info("Товар {} | product_id={} admin_id={}",
                "показан" if is_active else "скрыт", product_id, actor_id)

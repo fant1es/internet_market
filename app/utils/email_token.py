@@ -1,10 +1,9 @@
-from urllib.error import URLError
-
 import itsdangerous
 from fastapi import HTTPException
 from itsdangerous import URLSafeTimedSerializer
 
 from app.config import settings
+from app.utils.errors import AppError
 
 _CHANGE_MAIL_SALT = "change-email"
 
@@ -24,11 +23,11 @@ def read_change_email_token(token: str, max_age: int | None = None) -> dict:
     try:
         data = _serializer(_CHANGE_MAIL_SALT).loads(token, max_age=ttl)
     except itsdangerous.exc.SignatureExpired:
-        raise HTTPException(400, "Ссылка устарела, повторите запрос на смену почты")
+        raise AppError(400, "link_expired")
     except itsdangerous.exc.BadTimeSignature:
-        raise HTTPException(400, "Недействительная ссылка")
+        raise AppError(400, "link_invalid")
 
     if not isinstance(data, dict) or not {"uid", "email", "tv"} <= data.keys():
-        raise HTTPException(400, "Недействительная ссылка")
+        raise AppError(400, "link_invalid")
 
     return data

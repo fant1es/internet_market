@@ -1,4 +1,3 @@
-from fastapi import HTTPException
 from loguru import logger
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
@@ -9,7 +8,7 @@ from app.models import Cart, User
 from app.schemas.auth import UserUpdate
 from app.utils.database import run_in_transaction
 from app.utils.email_token import create_change_email_token, read_change_email_token
-from app.utils.errors import field_error
+from app.utils.errors import AppError, field_error
 from app.utils.security import hash_password, verify_password
 
 audit = logger.bind(channel="audit")
@@ -19,7 +18,7 @@ async def _register(db: AsyncSession, name: str, email: str, password: str) -> U
     # noinspection PyTypeChecker
     if await db.scalar(select(User.id).where(User.email == email)):
         logger.debug("Регистрация отклонена | причина=почта уже занята")
-        raise HTTPException(status_code=400, detail="Такая почта уже зарегистрирована")
+        raise AppError(400, "email_taken")
 
     user = User(name=name, email=email, password_hash=hash_password(password))
     db.add(user)
@@ -33,7 +32,7 @@ async def register_user(db: AsyncSession, name: str, email: str, password: str) 
         user = await run_in_transaction(db, _register, name, email, password)
     except IntegrityError:
         # Гонка: два запроса с одной почтой прошли проверку одновременно
-        raise HTTPException(status_code=400, detail="Такая почта уже зарегистрирована")
+        raise AppError(400, "email_taken")
     await db.refresh(user)
     logger.info("Пользователь зарегистрирован | user_id={}", user.id)
     return user
@@ -45,13 +44,13 @@ async def authenticate(db: AsyncSession, email: str, password: str) -> User:
     # Почту в лог не пишем, причина клиенту не раскрывается
     if user is None:
         logger.warning("Неудачный вход | причина=пользователь не найден")
-        raise HTTPException(status_code=401, detail="Неверный пароль или почта")
+        raise AppError(401, "bad_credentials")
     if not user.is_active:
         logger.warning("Вход отклонён | причина=аккаунт заблокирован user_id={}", user.id)
-        raise HTTPException(status_code=401, detail="Аккаунт заблокирован")
+        raise AppError(401, "account_blocked")
     if not verify_password(password, user.password_hash):
         logger.warning("Неудачный вход | причина=неверный пароль user_id={}", user.id)
-        raise HTTPException(status_code=401, detail="Неверный пароль или почта")
+        raise AppError(401, "bad_credentials")
     logger.info("Вход выполнен | user_id={}", user.id)
     return user
 
@@ -74,9 +73,9 @@ async def update_user(db: AsyncSession, user: User, data: UserUpdate) -> User:
 async def change_password(db: AsyncSession, user: User, current_password: str, new_password: str) -> None:
     if not verify_password(current_password, user.password_hash):
         logger.warning("Смена пароля отклонена | причина=неверный текущий пароль user_id={}", user.id)
-        raise field_error("current_password", "Неверный текущий пароль")
+        raise field_error("current_password", "wrong_current_password")
     if current_password == new_password:
-        raise field_error("new_password", "Новый пароль должен отличаться от текущего")
+        raise field_error("new_password", "password_same")
 
     user.password_hash = hash_password(new_password)
     user.token_version = User.token_version + 1  # инкремент на стороне БД
@@ -89,12 +88,12 @@ async def request_email_change(db: AsyncSession, user: User, current_password: s
     """Проверяет корректность данных, создает токен для смены почты и предоставляет ссылку для подтверждения почты."""
     if not verify_password(current_password, user.password_hash):
         logger.warning("Смена почты отклонена | причина=неверный пароль user_id={}", user.id)
-        raise field_error("current_password", "Введен неверный пароль")
+        raise field_error("current_password", "wrong_current_password")
     if new_email == user.email:
-        raise field_error("new_email", "Новая почта должна отличаться от текущей")
+        raise field_error("new_email", "email_same")
     # noinspection PyTypeChecker
     if await db.scalar(select(User.id).where(User.email == new_email)):
-        raise field_error("new_email", "Такая почта уже зарегистрирована")
+        raise field_error("new_email", "email_taken")
 
     token = create_change_email_token(user_id=user.id, new_email=new_email, token_version=user.token_version)
 
@@ -108,13 +107,13 @@ async def _confirm_email_change(db: AsyncSession, data: dict) -> User:
     if user is None or not user.is_active or data["tv"] != user.token_version:
         logger.warning("Подтверждение почты отклонено | причина=ссылка недействительна или уже использована user_id={}",
                        data["uid"])
-        raise HTTPException(400, "Ссылка недействительна или уже использована")
+        raise AppError(400, "link_invalid")
 
     # Проверяем заново: за время жизни ссылки этот адрес мог быть занят
     # noinspection PyTypeChecker
     if await db.scalar(select(User.id).where(User.email == data["email"])):
         logger.debug("Подтверждение почты отклонено | причина=адрес занят user_id={}", data["uid"])
-        raise HTTPException(status_code=400, detail="Эта почта уже занята другим аккаунтом")
+        raise AppError(400, "email_in_use")
 
     user.email = data["email"]
     # Убивает все сессии + выданные ссылки
@@ -127,7 +126,7 @@ async def confirm_email_change(db: AsyncSession, token: str) -> User:
     try:
         user = await run_in_transaction(db, _confirm_email_change, data)
     except IntegrityError:
-        raise HTTPException(400, "Эта почта уже занята")
+        raise AppError(400, "email_in_use")
 
     await db.refresh(user)
     audit.info("Почта изменена | user_id={}", user.id)

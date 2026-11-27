@@ -3,7 +3,7 @@ from collections import defaultdict
 from decimal import Decimal
 from enum import Enum
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy import exists, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -12,6 +12,7 @@ from app.models import Attribute, AttributeOption, Brand, Category, Product, Pro
 from app.schemas.attribute import ProductAttributeOut
 from app.schemas.product import ProductListOut, ProductOut, PriceRangeOut
 from app.services.product_attributes_service import fetch_product_attributes
+from app.utils.errors import AppError
 
 router = APIRouter(prefix="/products", tags=["products"])
 
@@ -58,10 +59,7 @@ async def _filter_by_options(db: AsyncSession, stmt, option_ids: list[int], cate
     # Если нашлось меньше, чем передали: часть id не существует или чужая для категории.
     # Лучше ошибка, чем молчаливое игнорирование: иначе фильтр выглядел бы применённым
     if len(rows) != len(ids):
-        raise HTTPException(
-            status_code=422,
-            detail="Вариант характеристики не найден или не относится к выбранной категории",
-        )
+        raise AppError(422, "option_invalid")
 
     # Группируем выбранные варианты по атрибутам: attribute_id -> [option_id, ...]
     groups: dict[int, list[int]] = defaultdict(list)
@@ -91,10 +89,7 @@ async def list_products(
     db: AsyncSession = Depends(get_db),
 ):
     if min_price is not None and max_price is not None and min_price > max_price:
-        raise HTTPException(
-            status_code=422,
-            detail="Минимальная цена не может быть больше максимальной",
-        )
+        raise AppError(422, "price_range_invalid")
 
     stmt = _public_products()
 
@@ -155,7 +150,7 @@ async def price_range(category: str | None = Query(None), db: AsyncSession = Dep
 async def get_product(product_id: int, db: AsyncSession = Depends(get_db)):
     product = await db.scalar(_public_products().where(Product.id == product_id))
     if product is None:
-        raise HTTPException(status_code=404, detail="Товар не найден")
+        raise AppError(404, "product_not_found")
     return product
 
 
@@ -166,6 +161,6 @@ async def get_product_attributes(product_id: int, db: AsyncSession = Depends(get
     # Сначала убеждаемся, что товар существует и виден публично (активен, категория активна)
     exists_ = await db.scalar(_public_products().where(Product.id == product_id).with_only_columns(Product.id))
     if exists_ is None:
-        raise HTTPException(status_code=404, detail="Товар не найден")
+        raise AppError(404, "product_not_found")
 
     return await fetch_product_attributes(db, product_id)

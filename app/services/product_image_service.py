@@ -1,9 +1,9 @@
-from fastapi import HTTPException
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.concurrency import run_in_threadpool
 
 from app.models import Product
+from app.utils.errors import AppError
 from app.services.image_storage import (
     MAX_IMAGE_BYTES,
     InvalidImageError,
@@ -18,13 +18,13 @@ async def _store_file(data: bytes) -> str:
     """Проверяет размер, обрабатывает и сохраняет файл. Возвращает путь для БД."""
     if len(data) > MAX_IMAGE_BYTES:
         logger.debug("Изображение отклонено | причина=слишком большой файл размер={} байт", len(data))
-        raise HTTPException(413, f"Файл слишком большой (максимум {MAX_IMAGE_BYTES // 1024 // 1024} МБ)")
+        raise AppError(413, "image_too_large", {"max_mb": MAX_IMAGE_BYTES // 1024 // 1024})
     try:
         # Pillow блокирует поток, поэтому уводим обработку в пул потоков
         return await run_in_threadpool(save_product_image, data)
     except InvalidImageError as e:
         logger.warning("Изображение отклонено | причина={}", e)
-        raise HTTPException(415, str(e))
+        raise AppError(415, "image_invalid")
 
 
 async def _commit_path(db: AsyncSession, product: Product, path: str | None) -> None:

@@ -1,6 +1,5 @@
 import math
 
-from fastapi import HTTPException, status
 from loguru import logger
 from sqlalchemy import func, select, exists
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,6 +10,7 @@ from app.models.order import OrderStatus
 from app.models.user import UserRole
 from app.schemas.review import ReviewCreate, ReviewUpdate
 from app.utils.database import commit_or_409, get_or_404, run_in_transaction
+from app.utils.errors import AppError
 
 audit = logger.bind(channel="audit")
 
@@ -37,10 +37,7 @@ async def _ensure_purchased(db: AsyncSession, user_id: int, product_id: int) -> 
     """Отзыв можно оставить только на товар из оплаченного заказа."""
     if not await _has_purchased(db, user_id, product_id):
         logger.warning("Отзыв отклонён | причина=нет покупки user_id={} product_id={}", user_id, product_id)
-        raise HTTPException(
-            status.HTTP_403_FORBIDDEN,
-            "Оставлять отзывы могут только покупатели этого товара",
-        )
+        raise AppError(403, "review_buyers_only")
 
 
 # noinspection PyTypeChecker
@@ -70,7 +67,7 @@ async def _ensure_active_product(db: AsyncSession, product_id: int) -> None:
         )
     )
     if found is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Товар не найден")
+        raise AppError(404, "product_not_found")
 
 
 async def _load_review(db: AsyncSession, review_id: int) -> Review | None:
@@ -123,7 +120,7 @@ async def create_review(db: AsyncSession, product_id: int, user: User, data: Rev
 
     review = Review(**data.model_dump(), user_id=user.id, product_id=product_id)
     db.add(review)
-    await commit_or_409(db, "Вы уже оставили отзыв на этот товар")
+    await commit_or_409(db, "review_exists")
     loaded = await _load_review(db, review.id)
     logger.info("Отзыв создан | review_id={} product_id={} user_id={} оценка={}",
                 loaded.id, loaded.product_id, loaded.user_id, loaded.rating)
@@ -131,12 +128,12 @@ async def create_review(db: AsyncSession, product_id: int, user: User, data: Rev
 
 
 async def _apply_update(db: AsyncSession, review_id: int, user: User, data: ReviewUpdate) -> None:
-    review = await get_or_404(db, Review, review_id, "Отзыв не найден")
+    review = await get_or_404(db, Review, review_id, "review_not_found")
     # Редактировать чужое нельзя даже админу
     if review.user_id != user.id:
         logger.warning("Правка отзыва отклонена | причина=чужой отзыв review_id={} user_id={}",
                        review_id, user.id)
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "Это не ваш отзыв")
+        raise AppError(403, "review_not_yours")
 
     for field, value in data.model_dump(exclude_unset=True).items():
         # Если None в обязательных полях, не меняем данные
@@ -151,11 +148,11 @@ async def update_review(db: AsyncSession, review_id: int, user: User, data: Revi
 
 
 async def _remove(db: AsyncSession, review_id: int, user: User) -> int:
-    review = await get_or_404(db, Review, review_id, "Отзыв не найден")
+    review = await get_or_404(db, Review, review_id, "review_not_found")
     if review.user_id != user.id and user.role != UserRole.ADMIN:
         logger.warning("Удаление отзыва отклонено | причина=нет прав review_id={} user_id={}",
                        review_id, user.id)
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "Нет прав на удаление")
+        raise AppError(403, "review_delete_forbidden")
     author_id = review.user_id  # запоминаем до удаления: нужен для лога
     await db.delete(review)
     return author_id

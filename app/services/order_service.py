@@ -1,7 +1,6 @@
 from decimal import Decimal
 from typing import Any
 
-from fastapi import HTTPException
 from loguru import logger
 from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,6 +12,7 @@ from app.models.order import OrderStatus
 from app.models.user import UserRole
 from app.services.balance_service import apply_balance_change
 from app.utils.database import run_in_transaction
+from app.utils.errors import AppError
 
 audit = logger.bind(channel="audit")
 
@@ -23,7 +23,7 @@ async def _create(db: AsyncSession, user_id: int, shipping_address: str,
     cart = await db.scalar(select(Cart).where(Cart.user_id == user_id).with_for_update())
     if cart is None:
         logger.debug("Заказ не создан | причина=корзина пуста user_id={}", user_id)
-        raise HTTPException(400, "Корзина пуста")
+        raise AppError(400, "cart_empty")
 
     # Сортировка по product_id нужна для единого порядка блокировок
     items = (await db.scalars(
@@ -31,7 +31,7 @@ async def _create(db: AsyncSession, user_id: int, shipping_address: str,
     )).all()
     if not items:
         logger.debug("Заказ не создан | причина=корзина пуста user_id={}", user_id)
-        raise HTTPException(400, "Корзина пуста")
+        raise AppError(400, "cart_empty")
 
     # Товары тоже блокируем и обновляем их состояние в SQLAlchemy
     products = {
@@ -67,11 +67,7 @@ async def _create(db: AsyncSession, user_id: int, shipping_address: str,
     if problems:
         logger.warning("Заказ не создан | причина=товары недоступны user_id={} проблемы={}",
                        user_id, [(p["product_id"], p["reason"]) for p in problems])
-        raise HTTPException(409, detail={
-            "code": "cart_unavailable",
-            "message": "Некоторые товары недоступны",
-            "items": problems,
-        })
+        raise AppError(409, "cart_unavailable", extra={"items": problems})
 
     # Создание заказа
     total = sum((products[i.product_id].price * i.quantity for i in items), Decimal("0"))
@@ -106,7 +102,7 @@ async def _lock_order(db: AsyncSession, order_id: int, user_id: int) -> Order:
     if order is None:
         logger.warning("Заказ не найден или принадлежит другому пользователю | order_id={} user_id={}",
                        order_id, user_id)
-        raise HTTPException(404, "Заказ не найден")
+        raise AppError(404, "order_not_found")
     return order
 
 
@@ -117,7 +113,7 @@ async def _pay(db: AsyncSession, order_id: int, user_id: int) -> int:
         # Повторная оплата не проходит молча
         logger.warning("Оплата отклонена | причина=заказ не в ожидании оплаты order_id={} статус={}",
                        order_id, getattr(order.status, "value", order.status))
-        raise HTTPException(409, "Заказ нельзя оплатить: он уже не в ожидании оплаты")
+        raise AppError(409, "order_not_payable")
 
     # Изменение баланса пользователя и статуса заказа
     await apply_balance_change(db, user_id, -order.total_amount, TransactionType.PAYMENT, order.id)
@@ -130,7 +126,7 @@ async def _cancel(db: AsyncSession, order_id: int, user_id: int) -> tuple[int, b
     if order.status not in (OrderStatus.PENDING, OrderStatus.PAID):
         logger.debug("Отмена отклонена | order_id={} статус={}",
                      order_id, getattr(order.status, "value", order.status))
-        raise HTTPException(409, "Этот заказ нельзя отменить")
+        raise AppError(409, "order_not_cancellable")
 
     # Возврат денег на баланс за отмену оплаченного заказа
     refunded = order.status == OrderStatus.PAID
@@ -191,11 +187,11 @@ async def get_receipt_order(db: AsyncSession, order_id: int, user: User) -> Orde
     if order is None:
         # Несуществующий или чужой заказ: через интерфейс сюда не попасть, значит, перебор id
         logger.warning("Чек не найден или чужой | order_id={} user_id={}", order_id, user.id)
-        raise HTTPException(404, "Чек не найден")
+        raise AppError(404, "receipt_not_found")
     if order.status not in (OrderStatus.PAID, OrderStatus.COMPLETED):
         logger.debug("Чек недоступен | причина=статус заказа order_id={} статус={}",
                      order_id, getattr(order.status, "value", order.status))
-        raise HTTPException(404, "Чек не найден")
+        raise AppError(404, "receipt_not_found")
     if is_admin and order.user_id != user.id:
         # В чеке адрес и телефон покупателя: просмотр админом фиксируем
         audit.info("Админ открыл чужой чек | order_id={} admin_id={} владелец_id={}",

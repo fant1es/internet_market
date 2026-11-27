@@ -1,18 +1,18 @@
 from decimal import Decimal
 
-from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models import Cart, CartItem, Product
 from app.schemas.cart import CartOut
+from app.utils.errors import AppError
 
 
 async def _get_cart(db: AsyncSession, user_id: int) -> Cart:
     cart = await db.scalar(select(Cart).where(Cart.user_id == user_id))
     if cart is None:
-        raise HTTPException(404, "Корзина не найдена")
+        raise AppError(404, "cart_not_found")
     return cart
 
 
@@ -24,15 +24,14 @@ async def _get_own_item(db: AsyncSession, cart: Cart, item_id: int) -> CartItem:
         .options(selectinload(CartItem.product))
     )
     if item is None:
-        raise HTTPException(404, "Позиция не найдена")
+        raise AppError(404, "cart_item_not_found")
     return item
 
 
 def _check_stock(product: Product, quantity: int) -> None:
     if quantity > product.stock_quantity:
-        raise HTTPException(
-            409, f"Доступно только {product.stock_quantity} шт. товара «{product.name}»"
-        )
+        raise AppError(409, "stock_limited",
+                       {"available": product.stock_quantity, "name": product.name})
 
 
 async def get_cart_out(db: AsyncSession, user_id: int) -> CartOut:
@@ -65,7 +64,7 @@ async def add_item(db: AsyncSession, user_id: int, product_id: int, quantity: in
 
     product = await db.get(Product, product_id)
     if product is None or not product.is_active:
-        raise HTTPException(404, "Товар не найден")
+        raise AppError(404, "product_not_found")
 
     item = await db.scalar(
         select(CartItem).where(CartItem.cart_id == cart.id, CartItem.product_id == product.id)

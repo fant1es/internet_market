@@ -1,12 +1,13 @@
 from datetime import date
 
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, Response
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.dependencies.auth import CurrentAdmin, get_current_admin
 from app.services import report_service
+from app.utils.errors import AppError
 
 audit = logger.bind(channel="audit")
 
@@ -42,6 +43,6 @@ async def user_detail(user_id: int, admin: CurrentAdmin, db: AsyncSession = Depe
     result = await report_service.user_report(db, user_id)
     if result is None:
         logger.debug("Отчёт не выгружен | причина=пользователь не найден user_id={}", user_id)
-        raise HTTPException(404, "Пользователь не найден")
+        raise AppError(404, "user_not_found")
     audit.info("Выгружен отчёт | отчёт=пользователь user_id={} admin_id={}", user_id, admin.id)
     return _xlsx(*result)
