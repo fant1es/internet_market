@@ -32,7 +32,6 @@
     "order_not_cancellable": "This order cannot be cancelled",
     "receipt_not_found": "Receipt not found",
     "image_too_large": "The file is too large (maximum {max_mb} MB)",
-    "image_invalid": "Invalid image",
     "slug_taken": "This slug is already taken",
     "brand_in_use": "Cannot delete: the brand has {count} product(s). Hide the brand or change the brand of those products",
     "category_in_use": "Cannot delete: the category has {count} product(s). Move them to another category first",
@@ -49,6 +48,8 @@
     "password_same": "The new password must differ from the current one",
     "email_same": "The new email must differ from the current one",
     "link_invalid": "The link is invalid or has already been used",
-    "link_expired": "The link has expired, please request the email change again"
+    "link_expired": "The link has expired, please request the email change again",
+    "image_corrupt": "The file is not a valid image",
+    "image_format": "Only JPEG, PNG and WebP are allowed"
   }
 }

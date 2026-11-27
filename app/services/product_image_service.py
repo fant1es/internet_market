@@ -24,7 +24,7 @@ async def _store_file(data: bytes) -> str:
         return await run_in_threadpool(save_product_image, data)
     except InvalidImageError as e:
         logger.warning("Изображение отклонено | причина={}", e)
-        raise AppError(415, "image_invalid")
+        raise AppError(415, e.code)
 
 
 async def _commit_path(db: AsyncSession, product: Product, path: str | None) -> None:

@@ -11,6 +11,7 @@ PATTERNS = [
     r'\b[A-Z_]*CODE\s*=\s*"([a-z_]+)"',
     r'get_or_404\([^)]*?,\s*"([a-z_]+)"\s*\)',
     r'commit_or_409\(\s*db\s*,\s*"([a-z_]+)"',
+    r'InvalidImageError\(\s*"([a-z_]+)"',
 ]
 
 

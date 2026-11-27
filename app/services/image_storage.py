@@ -15,7 +15,12 @@ MAX_IMAGE_SIDE = 1200 # Длинная сторона после обработ�
 
 
 class InvalidImageError(Exception):
-    """Файл не является допустимым изображением."""
+    """Файл не является допустимым изображением.
+    Code - код ошибки для словаря: err.image_corrupt и err.image_format."""
+
+    def __init__(self, code: str):
+        super().__init__(code)
+        self.code = code
 
 
 def save_product_image(data: bytes) -> str:
@@ -28,10 +33,10 @@ def save_product_image(data: bytes) -> str:
         # Само декодирование файла
         img.load()
     except (UnidentifiedImageError, Image.DecompressionBombError, OSError) as e:
-        raise InvalidImageError("Файл не является корректным изображением") from e
+        raise InvalidImageError("image_corrupt") from e
 
     if fmt not in ALLOWED_FORMATS:
-        raise InvalidImageError("Допустимы только JPEG, PNG и WebP")
+        raise InvalidImageError("image_format")
 
     # Учитываем поворот из EXIF (фото с телефона)
     img = ImageOps.exif_transpose(img)
