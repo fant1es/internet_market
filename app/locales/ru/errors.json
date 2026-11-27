@@ -50,6 +50,40 @@
     "link_invalid": "Ссылка недействительна или уже использована",
     "link_expired": "Ссылка устарела, повторите запрос на смену почты",
     "image_corrupt": "Файл не является корректным изображением",
-    "image_format": "Допустимы только JPEG, PNG и WebP"
+    "image_format": "Допустимы только JPEG, PNG и WebP",
+
+    "validation": {
+      "missing": "Обязательное поле",
+      "invalid": "Некорректное значение",
+      "string_too_short": "Минимальная длина: {min_length} симв.",
+      "string_too_long": "Максимальная длина: {max_length} симв.",
+      "greater_than": "Значение должно быть больше {gt}",
+      "greater_than_equal": "Значение должно быть не меньше {ge}",
+      "less_than": "Значение должно быть меньше {lt}",
+      "less_than_equal": "Значение должно быть не больше {le}",
+      "decimal_max_digits": "Слишком много цифр: максимум {max_digits}",
+      "decimal_max_places": "Слишком много знаков после запятой: максимум {decimal_places}",
+      "decimal_whole_digits": "Слишком много цифр до запятой: максимум {whole_digits}",
+      "decimal_parsing": "Введите число",
+      "decimal_type": "Введите число",
+      "int_parsing": "Введите целое число",
+      "int_type": "Введите целое число",
+      "int_from_float": "Введите целое число",
+      "string_pattern_mismatch": "Недопустимый формат значения",
+      "extra_forbidden": "Недопустимое поле",
+      "json_invalid": "Некорректный JSON",
+      "invalid_email": "Некорректный адрес почты",
+      "old_price_gt_price": "Старая цена должна быть больше текущей",
+      "slug_format": "Slug: только латиница, цифры и дефисы, например smart-home",
+      "name_required": "Имя нельзя очистить",
+      "name_invalid": "Имя должно содержать только буквы и пробелы",
+      "address_too_short": "Длина адреса должна быть не короче {min} символов",
+      "password_too_short": "Пароль должен быть не короче {min} символов",
+      "password_too_long": "Пароль должен быть не длиннее {max} символов",
+      "password_invalid_chars": "Пароль содержит недопустимые символы",
+      "phone_chars": "Номер может содержать только цифры, +, пробелы, скобки и дефисы",
+      "phone_invalid": "Неверно указан номер. Пример номера: +375 29 123-45-67",
+      "phone_not_mobile": "Укажите номер мобильного телефона"
+    }
   }
 }
